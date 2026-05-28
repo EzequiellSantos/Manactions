@@ -39,6 +39,9 @@ async function bootstrap() {
     .addTag('demandas')
     .addTag('notificacoes')
     .addTag('busca')
+    .addTag('processos')
+    .addTag('dashboard')
+    .addTag('health')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
