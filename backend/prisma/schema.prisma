@@ -1,0 +1,177 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Usuario {
+  id                String   @id @default(cuid())
+  supabaseId        String   @unique
+  nome              String
+  email             String   @unique
+  cargo             String?
+  departamento      String?
+  telefone          String?
+  avatarUrl         String?
+  papel                 Papel    @default(COLABORADOR)
+  ativo                 Boolean  @default(true)
+  notificacoesEmail     Boolean  @default(true)
+  notificacoesInApp     Boolean  @default(true)
+  criadoEm              DateTime @default(now())
+  atualizadoEm          DateTime @updatedAt
+
+  area              Area?    @relation("AreaResponsavel", fields: [areaId], references: [id])
+  areaId            String?
+  demandasCriadas   Demanda[] @relation("DemandaSolicitante")
+  demandasAssumidas Demanda[] @relation("DemandaResponsavel")
+  comentarios       Comentario[]
+  notificacoes      Notificacao[]
+  historicos        HistoricoEvento[]
+}
+
+enum Papel {
+  ADMIN
+  GESTOR
+  COLABORADOR
+}
+
+model Area {
+  id                String   @id @default(cuid())
+  nome              String
+  slug              String   @unique
+  descricao         String
+  responsabilidades String[]
+  categoria         String
+  cor               String   @default("#3B5BDB")
+  icone             String   @default("Building")
+  ativo             Boolean  @default(true)
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+  responsaveis      Usuario[]          @relation("AreaResponsavel")
+  canaisContato     CanalContato[]
+  demandas          Demanda[]
+  processos         Processo[]
+  historicos        HistoricoEvento[]
+}
+
+model CanalContato {
+  id     String  @id @default(cuid())
+  tipo   String
+  label  String
+  valor  String
+  link   String?
+  area   Area    @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  areaId String
+}
+
+model Demanda {
+  id            String        @id @default(cuid())
+  titulo        String
+  descricao     String
+  status        StatusDemanda @default(ABERTA)
+  prioridade    Prioridade    @default(MEDIA)
+  tags          String[]
+  prazo         DateTime?
+  criadoEm      DateTime      @default(now())
+  atualizadoEm  DateTime      @updatedAt
+
+  area          Area          @relation(fields: [areaId], references: [id])
+  areaId        String
+  solicitante   Usuario       @relation("DemandaSolicitante", fields: [solicitanteId], references: [id])
+  solicitanteId String
+  responsavel   Usuario?      @relation("DemandaResponsavel", fields: [responsavelId], references: [id])
+  responsavelId String?
+
+  historico     HistoricoEvento[]
+  comentarios   Comentario[]
+  anexos        Anexo[]
+}
+
+enum StatusDemanda {
+  ABERTA
+  EM_ANALISE
+  EM_ANDAMENTO
+  CONCLUIDA
+  CANCELADA
+  REJEITADA
+}
+
+enum Prioridade {
+  BAIXA
+  MEDIA
+  ALTA
+  URGENTE
+}
+
+model HistoricoEvento {
+  id          String   @id @default(cuid())
+  tipo        String
+  descricao   String
+  metadados   Json?
+  criadoEm    DateTime @default(now())
+
+  demanda     Demanda? @relation(fields: [demandaId], references: [id], onDelete: Cascade)
+  demandaId   String?
+  area        Area?    @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  areaId      String?
+  autor       Usuario  @relation(fields: [autorId], references: [id])
+  autorId     String
+}
+
+model Comentario {
+  id          String    @id @default(cuid())
+  conteudo    String
+  criadoEm    DateTime  @default(now())
+  editadoEm   DateTime?
+
+  demanda     Demanda   @relation(fields: [demandaId], references: [id], onDelete: Cascade)
+  demandaId   String
+  autor       Usuario   @relation(fields: [autorId], references: [id])
+  autorId     String
+}
+
+model Anexo {
+  id          String   @id @default(cuid())
+  nome        String
+  url         String
+  tamanho     Int
+  tipo        String
+  criadoEm    DateTime @default(now())
+
+  demanda     Demanda  @relation(fields: [demandaId], references: [id], onDelete: Cascade)
+  demandaId   String
+}
+
+model Processo {
+  id            String   @id @default(cuid())
+  titulo        String
+  slug          String   @unique
+  descricao     String
+  conteudo      String
+  categoria     String
+  tags          String[]
+  versao        String   @default("1.0")
+  visualizacoes Int      @default(0)
+  publicado     Boolean  @default(false)
+  criadoEm      DateTime @default(now())
+  atualizadoEm  DateTime @updatedAt
+
+  area          Area     @relation(fields: [areaId], references: [id])
+  areaId        String
+}
+
+model Notificacao {
+  id          String   @id @default(cuid())
+  tipo        String
+  titulo      String
+  mensagem    String
+  lida        Boolean  @default(false)
+  link        String?
+  criadoEm    DateTime @default(now())
+
+  usuario     Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuarioId   String
+}
