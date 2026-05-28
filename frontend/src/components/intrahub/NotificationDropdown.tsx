@@ -1,10 +1,11 @@
-import { Bell, FileText, Megaphone, ClipboardList } from "lucide-react";
+import { Bell, ClipboardList, FileText, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useNotifications, type AppNotification } from "@/hooks/use-notifications";
 import { cn } from "@/lib/utils";
 
@@ -32,31 +33,40 @@ function Item({ n }: { n: AppNotification }) {
 }
 
 export function NotificationDropdown() {
-  const { data: notifications = [], isLoading } = useNotifications();
+  const { data: notifications = [], isLoading, markAllAsRead } = useNotifications();
   const unread = notifications.filter((n) => !n.read).length;
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative" aria-label="Notificações">
-          <Bell className="h-5 w-5" />
-          {unread > 0 && (
-            <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
-              {unread}
-            </span>
-          )}
-        </Button>
-      </PopoverTrigger>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative" aria-label="Notificações">
+                <Bell className="h-5 w-5" />
+                {unread > 0 && (
+                  <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+                    {unread}
+                  </span>
+                )}
+              </Button>
+            </PopoverTrigger>
+          </TooltipTrigger>
+          <TooltipContent>Notificações</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       <PopoverContent align="end" className="w-[360px] p-0">
-        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
           <p className="font-display text-sm font-semibold">Notificações</p>
           {unread > 0 && (
-            <span className="text-xs text-muted-foreground">{unread} não lidas</span>
+            <button type="button" className="text-xs font-medium text-primary hover:underline" onClick={markAllAsRead}>
+              Marcar todas como lidas
+            </button>
           )}
         </div>
         <div className="max-h-[420px] space-y-1 overflow-y-auto p-2">
           {isLoading && (
-            <p className="px-3 py-8 text-center text-xs text-muted-foreground">Carregando…</p>
+            <p className="px-3 py-8 text-center text-xs text-muted-foreground">Carregando...</p>
           )}
           {!isLoading && notifications.length === 0 && (
             <p className="px-3 py-8 text-center text-xs text-muted-foreground">
@@ -68,8 +78,8 @@ export function NotificationDropdown() {
           ))}
         </div>
         <div className="border-t border-border px-2 py-2">
-          <Button variant="ghost" className="w-full justify-center text-xs">
-            Ver todas
+          <Button variant="ghost" className="w-full justify-center text-xs" onClick={markAllAsRead}>
+            Marcar todas como lidas
           </Button>
         </div>
       </PopoverContent>

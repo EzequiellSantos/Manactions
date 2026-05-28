@@ -1,0 +1,112 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Camera, ListChecks, Loader2, Save } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { useAuth } from "@/hooks/use-auth";
+
+export const Route = createFileRoute("/_authenticated/perfil")({
+  head: () => ({ meta: [{ title: "Meu Perfil — IntraHub" }] }),
+  component: PerfilPage,
+});
+
+export function PerfilPage() {
+  const { displayName, initials, user } = useAuth();
+  const [saving, setSaving] = useState(false);
+  const [emailNotify, setEmailNotify] = useState(true);
+  const [inAppNotify, setInAppNotify] = useState(true);
+
+  function save() {
+    setSaving(true);
+    window.setTimeout(() => {
+      setSaving(false);
+      toast.success("Perfil atualizado", { description: "Os dados serão persistidos pelo backend depois." });
+    }, 600);
+  }
+
+  return (
+    <div className="mx-auto w-full max-w-5xl space-y-6">
+      <header>
+        <h1 className="font-display text-2xl font-bold tracking-tight">Meu Perfil</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Gerencie dados pessoais e preferências de notificação.</p>
+      </header>
+
+      <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+        <aside className="rounded-xl border border-border bg-card p-6 text-center shadow-soft">
+          <Avatar className="mx-auto h-28 w-28">
+            <AvatarFallback className="bg-gradient-brand text-3xl font-semibold text-primary-foreground">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+          <Button type="button" variant="outline" className="mt-4 gap-2">
+            <Camera className="h-4 w-4" />
+            Trocar foto
+          </Button>
+          <Button asChild variant="ghost" className="mt-6 w-full gap-2">
+            <Link to="/demandas">
+              <ListChecks className="h-4 w-4" />
+              Minhas Demandas
+            </Link>
+          </Button>
+        </aside>
+
+        <main className="space-y-6">
+          <section className="rounded-xl border border-border bg-card p-6 shadow-soft">
+            <h2 className="font-display text-lg font-semibold">Dados do usuário</h2>
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Nome</Label>
+                <Input defaultValue={displayName} />
+              </div>
+              <div className="space-y-2">
+                <Label>E-mail</Label>
+                <Input value={user?.email ?? ""} readOnly />
+              </div>
+              <div className="space-y-2">
+                <Label>Cargo</Label>
+                <Input defaultValue="Analista de Operações" />
+              </div>
+              <div className="space-y-2">
+                <Label>Departamento</Label>
+                <Input defaultValue="Operações" />
+              </div>
+              <div className="space-y-2">
+                <Label>Telefone</Label>
+                <Input defaultValue="+55 11 90000-0000" />
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-xl border border-border bg-card p-6 shadow-soft">
+            <h2 className="font-display text-lg font-semibold">Preferências de notificação</h2>
+            <div className="mt-5 space-y-4">
+              <label className="flex items-center justify-between gap-4">
+                <span>
+                  <span className="block text-sm font-medium">E-mail</span>
+                  <span className="text-xs text-muted-foreground">Receber atualizações importantes por e-mail.</span>
+                </span>
+                <Switch checked={emailNotify} onCheckedChange={setEmailNotify} />
+              </label>
+              <label className="flex items-center justify-between gap-4">
+                <span>
+                  <span className="block text-sm font-medium">In-app</span>
+                  <span className="text-xs text-muted-foreground">Receber alertas dentro do IntraHub.</span>
+                </span>
+                <Switch checked={inAppNotify} onCheckedChange={setInAppNotify} />
+              </label>
+            </div>
+          </section>
+
+          <Button type="button" className="gap-2" disabled={saving} onClick={save}>
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            {saving ? "Salvando..." : "Salvar Alterações"}
+          </Button>
+        </main>
+      </div>
+    </div>
+  );
+}

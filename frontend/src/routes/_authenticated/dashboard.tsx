@@ -23,6 +23,15 @@ function getGreeting() {
   return "Boa noite";
 }
 
+function withAlpha(hexColor: string, alpha: number) {
+  const hex = hexColor.replace("#", "");
+  if (hex.length !== 6) return hexColor;
+  const r = Number.parseInt(hex.slice(0, 2), 16);
+  const g = Number.parseInt(hex.slice(2, 4), 16);
+  const b = Number.parseInt(hex.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 const STAT_CARDS = [
   { key: "totalAreas", label: "Áreas cadastradas", icon: Layers, accent: "text-primary bg-primary/10" },
   { key: "minhasDemandasAbertas", label: "Minhas demandas abertas", icon: ListChecks, accent: "text-secondary bg-secondary/10" },
@@ -98,12 +107,13 @@ function DashboardPage() {
                 transition={{ duration: 0.35, delay: i * 0.04 }}
               >
                 <Link
-                  to="/areas"
+                  to="/areas/$slug"
+                  params={{ slug: a.slug }}
                   className="group flex h-full items-start gap-3 rounded-xl border border-border bg-card p-4 transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-elevated"
                 >
                   <div
                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
-                    style={{ backgroundColor: `${a.cor.replace(")", " / 0.12)")}`, color: a.cor }}
+                    style={{ backgroundColor: withAlpha(a.cor, 0.12), color: a.cor }}
                   >
                     <Icon className="h-5 w-5" />
                   </div>

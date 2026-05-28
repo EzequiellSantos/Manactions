@@ -1,33 +1,48 @@
+import { CheckCircle2, Circle, Clock3, PlayCircle, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { type DemandaStatus } from "@/lib/mock-data";
 
-export type StatusDemanda = "aberto" | "em_andamento" | "concluido" | "cancelado";
-
-const STATUS_MAP: Record<StatusDemanda, { label: string; cls: string }> = {
-  aberto: {
-    label: "Aberto",
+const STATUS_MAP: Record<DemandaStatus, { label: string; cls: string; icon: typeof Circle }> = {
+  aberta: {
+    label: "Aberta",
     cls: "bg-secondary/10 text-secondary border-secondary/20",
+    icon: Circle,
+  },
+  em_analise: {
+    label: "Em análise",
+    cls: "bg-warning/10 text-warning border-warning/20",
+    icon: Clock3,
   },
   em_andamento: {
     label: "Em andamento",
     cls: "bg-primary/10 text-primary border-primary/20",
+    icon: PlayCircle,
   },
-  concluido: {
-    label: "Concluído",
+  concluida: {
+    label: "Concluída",
     cls: "bg-success/10 text-success border-success/20",
+    icon: CheckCircle2,
   },
-  cancelado: {
-    label: "Cancelado",
+  cancelada: {
+    label: "Cancelada",
     cls: "bg-muted text-muted-foreground border-border",
+    icon: XCircle,
+  },
+  rejeitada: {
+    label: "Rejeitada",
+    cls: "bg-destructive/10 text-destructive border-destructive/20",
+    icon: XCircle,
   },
 };
 
 interface StatusBadgeProps {
-  status: StatusDemanda;
+  status: DemandaStatus;
   className?: string;
 }
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
   const cfg = STATUS_MAP[status];
+  const Icon = cfg.icon;
   return (
     <span
       className={cn(
@@ -36,7 +51,7 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
         className,
       )}
     >
-      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+      <Icon className="h-3.5 w-3.5" />
       {cfg.label}
     </span>
   );

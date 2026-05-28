@@ -1,30 +1,153 @@
-import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Search, FileText, Layers, ListChecks, ArrowRight } from "lucide-react";
-import { AREAS, DEMANDAS_RECENTES, getAreaIcon } from "@/lib/mock-data";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import {
+  ArrowRight,
+  FileText,
+  Layers,
+  ListChecks,
+  Search,
+  UserRound,
+} from "lucide-react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  AREAS,
+  DEMANDAS,
+  TODOS_RESPONSAVEIS,
+  getAreaById,
+  getAreaIcon,
+} from "@/lib/mock-data";
+import { cn } from "@/lib/utils";
 
 interface SearchModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+type SearchResult =
+  | { id: string; group: "Áreas"; title: string; description: string; icon: React.ElementType; to: "area"; slug: string }
+  | { id: string; group: "Responsáveis"; title: string; description: string; icon: React.ElementType; to: "area"; slug: string }
+  | { id: string; group: "Demandas"; title: string; description: string; icon: React.ElementType; to: "demanda"; demandaId: string }
+  | { id: string; group: "Processos"; title: string; description: string; icon: React.ElementType; to: "area"; slug: string };
+
+const GROUPS = ["Áreas", "Responsáveis", "Demandas", "Processos"] as const;
+const SUGESTOES = ["acesso ao ERP", "reembolso", "benefícios", "contratos"];
+
 export function SearchModal({ open, onOpenChange }: SearchModalProps) {
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!open) setQuery("");
+    if (!open) {
+      setQuery("");
+      setDebouncedQuery("");
+      setActiveIndex(0);
+      return;
+    }
+    window.setTimeout(() => inputRef.current?.focus(), 20);
   }, [open]);
 
-  const q = query.toLowerCase().trim();
-  const areas = AREAS.filter((a) => !q || a.nome.toLowerCase().includes(q));
-  const demandas = DEMANDAS_RECENTES.filter((d) => !q || d.titulo.toLowerCase().includes(q));
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedQuery(query), 300);
+    return () => window.clearTimeout(timer);
+  }, [query]);
 
-  const go = (path: string) => {
+  const results = useMemo<SearchResult[]>(() => {
+    const q = debouncedQuery.toLowerCase().trim();
+    if (!q) return [];
+
+    const areaResults: SearchResult[] = AREAS.filter((area) =>
+      `${area.nome} ${area.descricao} ${area.categoria}`.toLowerCase().includes(q),
+    ).map((area) => ({
+      id: `area-${area.id}`,
+      group: "Áreas",
+      title: area.nome,
+      description: area.descricao,
+      icon: getAreaIcon(area.icone),
+      to: "area",
+      slug: area.slug,
+    }));
+
+    const responsaveis: SearchResult[] = TODOS_RESPONSAVEIS.filter((responsavel) =>
+      `${responsavel.nome} ${responsavel.cargo} ${responsavel.email}`.toLowerCase().includes(q),
+    ).map((responsavel) => {
+      const area = getAreaById(responsavel.areaId);
+      return {
+        id: `resp-${responsavel.id}`,
+        group: "Responsáveis",
+        title: responsavel.nome,
+        description: `${responsavel.cargo} · ${area?.nome ?? responsavel.areaId}`,
+        icon: UserRound,
+        to: "area",
+        slug: area?.slug ?? "tecnologia-da-informacao",
+      };
+    });
+
+    const demandas: SearchResult[] = DEMANDAS.filter((demanda) =>
+      `${demanda.id} ${demanda.titulo} ${demanda.descricao} ${demanda.categoria}`.toLowerCase().includes(q),
+    ).map((demanda) => ({
+      id: `demanda-${demanda.id}`,
+      group: "Demandas",
+      title: `#${demanda.id} — ${demanda.titulo}`,
+      description: getAreaById(demanda.areaId)?.nome ?? demanda.areaId,
+      icon: ListChecks,
+      to: "demanda",
+      demandaId: demanda.id,
+    }));
+
+    const processos: SearchResult[] = AREAS.flatMap((area) =>
+      area.processos
+        .filter((processo) => `${processo.titulo} ${processo.descricao} ${processo.categoria}`.toLowerCase().includes(q))
+        .map((processo) => ({
+          id: `processo-${processo.id}`,
+          group: "Processos" as const,
+          title: processo.titulo,
+          description: `${processo.categoria} · ${area.nome}`,
+          icon: FileText,
+          to: "area" as const,
+          slug: area.slug,
+        })),
+    );
+
+    return [...areaResults, ...responsaveis, ...demandas, ...processos].slice(0, 16);
+  }, [debouncedQuery]);
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [debouncedQuery]);
+
+  function openResult(result: SearchResult) {
     onOpenChange(false);
-    navigate({ to: path });
-  };
+    if (result.to === "demanda") {
+      navigate({ to: "/demandas/$id", params: { id: result.demandaId } });
+    } else {
+      navigate({ to: "/areas/$slug", params: { slug: result.slug } });
+    }
+  }
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      onOpenChange(false);
+      return;
+    }
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setActiveIndex((index) => Math.min(index + 1, Math.max(0, results.length - 1)));
+      return;
+    }
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveIndex((index) => Math.max(index - 1, 0));
+      return;
+    }
+    if (event.key === "Enter" && results[activeIndex]) {
+      event.preventDefault();
+      openResult(results[activeIndex]);
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -33,10 +156,11 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
         <div className="flex items-center gap-3 border-b border-border px-4 py-3">
           <Search className="h-5 w-5 text-muted-foreground" />
           <input
-            autoFocus
+            ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar áreas, demandas, processos..."
+            onKeyDown={handleKeyDown}
+            placeholder="Buscar áreas, responsáveis, demandas, processos..."
             className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           />
           <kbd className="hidden rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground sm:inline-block">
@@ -44,54 +168,66 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
           </kbd>
         </div>
 
-        <div className="max-h-[60vh] overflow-y-auto p-2">
-          {areas.length === 0 && demandas.length === 0 && (
-            <div className="px-4 py-10 text-center text-sm text-muted-foreground">
-              Nenhum resultado para “{query}”
-            </div>
-          )}
-
-          {areas.length > 0 && (
-            <div className="px-2 py-2">
-              <div className="px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                <Layers className="mr-1.5 inline h-3 w-3" /> Áreas
-              </div>
-              {areas.slice(0, 5).map((a) => {
-                const Icon = getAreaIcon(a.icone);
-                return (
+        <div className="max-h-[64vh] overflow-y-auto p-2">
+          {!debouncedQuery && (
+            <div className="px-4 py-5">
+              <p className="text-sm font-medium">Sugestões populares</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {SUGESTOES.map((sugestao) => (
                   <button
-                    key={a.id}
-                    onClick={() => go(`/areas/${a.slug}`)}
-                    className="group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm hover:bg-accent"
+                    key={sugestao}
+                    type="button"
+                    onClick={() => setQuery(sugestao)}
+                    className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:border-primary/40 hover:text-primary"
                   >
-                    <Icon className="h-4 w-4 text-primary" />
-                    <span className="flex-1 font-medium">{a.nome}</span>
-                    <span className="line-clamp-1 text-xs text-muted-foreground">{a.descricao}</span>
-                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
+                    {sugestao}
                   </button>
-                );
-              })}
+                ))}
+              </div>
             </div>
           )}
 
-          {demandas.length > 0 && (
-            <div className="px-2 py-2">
-              <div className="px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                <ListChecks className="mr-1.5 inline h-3 w-3" /> Demandas
-              </div>
-              {demandas.slice(0, 5).map((d) => (
-                <button
-                  key={d.id}
-                  onClick={() => go("/demandas")}
-                  className="group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm hover:bg-accent"
-                >
-                  <FileText className="h-4 w-4 text-secondary" />
-                  <span className="flex-1 font-medium">#{d.id} — {d.titulo}</span>
-                  <span className="text-xs text-muted-foreground">{d.area}</span>
-                </button>
-              ))}
+          {debouncedQuery && results.length === 0 && (
+            <div className="px-4 py-10 text-center text-sm text-muted-foreground">
+              Nenhum resultado para "{debouncedQuery}"
             </div>
           )}
+
+          {GROUPS.map((group) => {
+            const grouped = results.filter((result) => result.group === group);
+            if (grouped.length === 0) return null;
+            const GroupIcon = group === "Áreas" ? Layers : group === "Responsáveis" ? UserRound : group === "Demandas" ? ListChecks : FileText;
+            return (
+              <div key={group} className="px-2 py-2">
+                <div className="px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <GroupIcon className="mr-1.5 inline h-3 w-3" /> {group}
+                </div>
+                {grouped.map((result) => {
+                  const globalIndex = results.findIndex((item) => item.id === result.id);
+                  const Icon = result.icon;
+                  return (
+                    <button
+                      key={result.id}
+                      type="button"
+                      onMouseEnter={() => setActiveIndex(globalIndex)}
+                      onClick={() => openResult(result)}
+                      className={cn(
+                        "group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm",
+                        activeIndex === globalIndex ? "bg-accent" : "hover:bg-accent",
+                      )}
+                    >
+                      <Icon className="h-4 w-4 text-primary" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-medium">{result.title}</span>
+                        <span className="block truncate text-xs text-muted-foreground">{result.description}</span>
+                      </span>
+                      <ArrowRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })}
         </div>
       </DialogContent>
     </Dialog>

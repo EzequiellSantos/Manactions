@@ -13,13 +13,21 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedProcessosRouteImport } from './routes/_authenticated/processos'
+import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as AuthenticatedDemandasRouteImport } from './routes/_authenticated/demandas'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedBuscaRouteImport } from './routes/_authenticated/busca'
 import { Route as AuthenticatedAreasRouteImport } from './routes/_authenticated/areas'
+import { Route as AuthenticatedProcessosIndexRouteImport } from './routes/_authenticated/processos.index'
+import { Route as AuthenticatedDemandasIndexRouteImport } from './routes/_authenticated/demandas.index'
+import { Route as AuthenticatedAreasIndexRouteImport } from './routes/_authenticated/areas.index'
+import { Route as AuthenticatedProcessosIdRouteImport } from './routes/_authenticated/processos.$id'
+import { Route as AuthenticatedDemandasNovaRouteImport } from './routes/_authenticated/demandas.nova'
+import { Route as AuthenticatedDemandasIdRouteImport } from './routes/_authenticated/demandas.$id'
 import { Route as AuthenticatedAreasNovaRouteImport } from './routes/_authenticated/areas.nova'
 import { Route as AuthenticatedAreasSlugRouteImport } from './routes/_authenticated/areas.$slug'
+import { Route as AuthenticatedAdminConfiguracoesRouteImport } from './routes/_authenticated/admin.configuracoes'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -38,6 +46,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuthenticatedProcessosRoute = AuthenticatedProcessosRouteImport.update({
   id: '/processos',
   path: '/processos',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedPerfilRoute = AuthenticatedPerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedDemandasRoute = AuthenticatedDemandasRouteImport.update({
@@ -66,6 +79,40 @@ const AuthenticatedAreasRoute = AuthenticatedAreasRouteImport.update({
   path: '/areas',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedProcessosIndexRoute =
+  AuthenticatedProcessosIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedProcessosRoute,
+  } as any)
+const AuthenticatedDemandasIndexRoute =
+  AuthenticatedDemandasIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedDemandasRoute,
+  } as any)
+const AuthenticatedAreasIndexRoute = AuthenticatedAreasIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedAreasRoute,
+} as any)
+const AuthenticatedProcessosIdRoute =
+  AuthenticatedProcessosIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => AuthenticatedProcessosRoute,
+  } as any)
+const AuthenticatedDemandasNovaRoute =
+  AuthenticatedDemandasNovaRouteImport.update({
+    id: '/nova',
+    path: '/nova',
+    getParentRoute: () => AuthenticatedDemandasRoute,
+  } as any)
+const AuthenticatedDemandasIdRoute = AuthenticatedDemandasIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AuthenticatedDemandasRoute,
+} as any)
 const AuthenticatedAreasNovaRoute = AuthenticatedAreasNovaRouteImport.update({
   id: '/nova',
   path: '/nova',
@@ -76,6 +123,12 @@ const AuthenticatedAreasSlugRoute = AuthenticatedAreasSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => AuthenticatedAreasRoute,
 } as any)
+const AuthenticatedAdminConfiguracoesRoute =
+  AuthenticatedAdminConfiguracoesRouteImport.update({
+    id: '/admin/configuracoes',
+    path: '/admin/configuracoes',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -84,22 +137,35 @@ export interface FileRoutesByFullPath {
   '/busca': typeof AuthenticatedBuscaRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/demandas': typeof AuthenticatedDemandasRoute
-  '/processos': typeof AuthenticatedProcessosRoute
+  '/demandas': typeof AuthenticatedDemandasRouteWithChildren
+  '/perfil': typeof AuthenticatedPerfilRoute
+  '/processos': typeof AuthenticatedProcessosRouteWithChildren
+  '/admin/configuracoes': typeof AuthenticatedAdminConfiguracoesRoute
   '/areas/$slug': typeof AuthenticatedAreasSlugRoute
   '/areas/nova': typeof AuthenticatedAreasNovaRoute
+  '/demandas/$id': typeof AuthenticatedDemandasIdRoute
+  '/demandas/nova': typeof AuthenticatedDemandasNovaRoute
+  '/processos/$id': typeof AuthenticatedProcessosIdRoute
+  '/areas/': typeof AuthenticatedAreasIndexRoute
+  '/demandas/': typeof AuthenticatedDemandasIndexRoute
+  '/processos/': typeof AuthenticatedProcessosIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/areas': typeof AuthenticatedAreasRouteWithChildren
   '/busca': typeof AuthenticatedBuscaRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/demandas': typeof AuthenticatedDemandasRoute
-  '/processos': typeof AuthenticatedProcessosRoute
+  '/perfil': typeof AuthenticatedPerfilRoute
+  '/admin/configuracoes': typeof AuthenticatedAdminConfiguracoesRoute
   '/areas/$slug': typeof AuthenticatedAreasSlugRoute
   '/areas/nova': typeof AuthenticatedAreasNovaRoute
+  '/demandas/$id': typeof AuthenticatedDemandasIdRoute
+  '/demandas/nova': typeof AuthenticatedDemandasNovaRoute
+  '/processos/$id': typeof AuthenticatedProcessosIdRoute
+  '/areas': typeof AuthenticatedAreasIndexRoute
+  '/demandas': typeof AuthenticatedDemandasIndexRoute
+  '/processos': typeof AuthenticatedProcessosIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -110,10 +176,18 @@ export interface FileRoutesById {
   '/_authenticated/busca': typeof AuthenticatedBuscaRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/demandas': typeof AuthenticatedDemandasRoute
-  '/_authenticated/processos': typeof AuthenticatedProcessosRoute
+  '/_authenticated/demandas': typeof AuthenticatedDemandasRouteWithChildren
+  '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
+  '/_authenticated/processos': typeof AuthenticatedProcessosRouteWithChildren
+  '/_authenticated/admin/configuracoes': typeof AuthenticatedAdminConfiguracoesRoute
   '/_authenticated/areas/$slug': typeof AuthenticatedAreasSlugRoute
   '/_authenticated/areas/nova': typeof AuthenticatedAreasNovaRoute
+  '/_authenticated/demandas/$id': typeof AuthenticatedDemandasIdRoute
+  '/_authenticated/demandas/nova': typeof AuthenticatedDemandasNovaRoute
+  '/_authenticated/processos/$id': typeof AuthenticatedProcessosIdRoute
+  '/_authenticated/areas/': typeof AuthenticatedAreasIndexRoute
+  '/_authenticated/demandas/': typeof AuthenticatedDemandasIndexRoute
+  '/_authenticated/processos/': typeof AuthenticatedProcessosIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -125,21 +199,34 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/dashboard'
     | '/demandas'
+    | '/perfil'
     | '/processos'
+    | '/admin/configuracoes'
     | '/areas/$slug'
     | '/areas/nova'
+    | '/demandas/$id'
+    | '/demandas/nova'
+    | '/processos/$id'
+    | '/areas/'
+    | '/demandas/'
+    | '/processos/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
-    | '/areas'
     | '/busca'
     | '/configuracoes'
     | '/dashboard'
-    | '/demandas'
-    | '/processos'
+    | '/perfil'
+    | '/admin/configuracoes'
     | '/areas/$slug'
     | '/areas/nova'
+    | '/demandas/$id'
+    | '/demandas/nova'
+    | '/processos/$id'
+    | '/areas'
+    | '/demandas'
+    | '/processos'
   id:
     | '__root__'
     | '/'
@@ -150,9 +237,17 @@ export interface FileRouteTypes {
     | '/_authenticated/configuracoes'
     | '/_authenticated/dashboard'
     | '/_authenticated/demandas'
+    | '/_authenticated/perfil'
     | '/_authenticated/processos'
+    | '/_authenticated/admin/configuracoes'
     | '/_authenticated/areas/$slug'
     | '/_authenticated/areas/nova'
+    | '/_authenticated/demandas/$id'
+    | '/_authenticated/demandas/nova'
+    | '/_authenticated/processos/$id'
+    | '/_authenticated/areas/'
+    | '/_authenticated/demandas/'
+    | '/_authenticated/processos/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -191,6 +286,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProcessosRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/perfil': {
+      id: '/_authenticated/perfil'
+      path: '/perfil'
+      fullPath: '/perfil'
+      preLoaderRoute: typeof AuthenticatedPerfilRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/demandas': {
       id: '/_authenticated/demandas'
       path: '/demandas'
@@ -226,6 +328,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAreasRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/processos/': {
+      id: '/_authenticated/processos/'
+      path: '/'
+      fullPath: '/processos/'
+      preLoaderRoute: typeof AuthenticatedProcessosIndexRouteImport
+      parentRoute: typeof AuthenticatedProcessosRoute
+    }
+    '/_authenticated/demandas/': {
+      id: '/_authenticated/demandas/'
+      path: '/'
+      fullPath: '/demandas/'
+      preLoaderRoute: typeof AuthenticatedDemandasIndexRouteImport
+      parentRoute: typeof AuthenticatedDemandasRoute
+    }
+    '/_authenticated/areas/': {
+      id: '/_authenticated/areas/'
+      path: '/'
+      fullPath: '/areas/'
+      preLoaderRoute: typeof AuthenticatedAreasIndexRouteImport
+      parentRoute: typeof AuthenticatedAreasRoute
+    }
+    '/_authenticated/processos/$id': {
+      id: '/_authenticated/processos/$id'
+      path: '/$id'
+      fullPath: '/processos/$id'
+      preLoaderRoute: typeof AuthenticatedProcessosIdRouteImport
+      parentRoute: typeof AuthenticatedProcessosRoute
+    }
+    '/_authenticated/demandas/nova': {
+      id: '/_authenticated/demandas/nova'
+      path: '/nova'
+      fullPath: '/demandas/nova'
+      preLoaderRoute: typeof AuthenticatedDemandasNovaRouteImport
+      parentRoute: typeof AuthenticatedDemandasRoute
+    }
+    '/_authenticated/demandas/$id': {
+      id: '/_authenticated/demandas/$id'
+      path: '/$id'
+      fullPath: '/demandas/$id'
+      preLoaderRoute: typeof AuthenticatedDemandasIdRouteImport
+      parentRoute: typeof AuthenticatedDemandasRoute
+    }
     '/_authenticated/areas/nova': {
       id: '/_authenticated/areas/nova'
       path: '/nova'
@@ -240,29 +384,73 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAreasSlugRouteImport
       parentRoute: typeof AuthenticatedAreasRoute
     }
+    '/_authenticated/admin/configuracoes': {
+      id: '/_authenticated/admin/configuracoes'
+      path: '/admin/configuracoes'
+      fullPath: '/admin/configuracoes'
+      preLoaderRoute: typeof AuthenticatedAdminConfiguracoesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
 interface AuthenticatedAreasRouteChildren {
   AuthenticatedAreasSlugRoute: typeof AuthenticatedAreasSlugRoute
   AuthenticatedAreasNovaRoute: typeof AuthenticatedAreasNovaRoute
+  AuthenticatedAreasIndexRoute: typeof AuthenticatedAreasIndexRoute
 }
 
 const AuthenticatedAreasRouteChildren: AuthenticatedAreasRouteChildren = {
   AuthenticatedAreasSlugRoute: AuthenticatedAreasSlugRoute,
   AuthenticatedAreasNovaRoute: AuthenticatedAreasNovaRoute,
+  AuthenticatedAreasIndexRoute: AuthenticatedAreasIndexRoute,
 }
 
 const AuthenticatedAreasRouteWithChildren =
   AuthenticatedAreasRoute._addFileChildren(AuthenticatedAreasRouteChildren)
+
+interface AuthenticatedDemandasRouteChildren {
+  AuthenticatedDemandasIdRoute: typeof AuthenticatedDemandasIdRoute
+  AuthenticatedDemandasNovaRoute: typeof AuthenticatedDemandasNovaRoute
+  AuthenticatedDemandasIndexRoute: typeof AuthenticatedDemandasIndexRoute
+}
+
+const AuthenticatedDemandasRouteChildren: AuthenticatedDemandasRouteChildren = {
+  AuthenticatedDemandasIdRoute: AuthenticatedDemandasIdRoute,
+  AuthenticatedDemandasNovaRoute: AuthenticatedDemandasNovaRoute,
+  AuthenticatedDemandasIndexRoute: AuthenticatedDemandasIndexRoute,
+}
+
+const AuthenticatedDemandasRouteWithChildren =
+  AuthenticatedDemandasRoute._addFileChildren(
+    AuthenticatedDemandasRouteChildren,
+  )
+
+interface AuthenticatedProcessosRouteChildren {
+  AuthenticatedProcessosIdRoute: typeof AuthenticatedProcessosIdRoute
+  AuthenticatedProcessosIndexRoute: typeof AuthenticatedProcessosIndexRoute
+}
+
+const AuthenticatedProcessosRouteChildren: AuthenticatedProcessosRouteChildren =
+  {
+    AuthenticatedProcessosIdRoute: AuthenticatedProcessosIdRoute,
+    AuthenticatedProcessosIndexRoute: AuthenticatedProcessosIndexRoute,
+  }
+
+const AuthenticatedProcessosRouteWithChildren =
+  AuthenticatedProcessosRoute._addFileChildren(
+    AuthenticatedProcessosRouteChildren,
+  )
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAreasRoute: typeof AuthenticatedAreasRouteWithChildren
   AuthenticatedBuscaRoute: typeof AuthenticatedBuscaRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedDemandasRoute: typeof AuthenticatedDemandasRoute
-  AuthenticatedProcessosRoute: typeof AuthenticatedProcessosRoute
+  AuthenticatedDemandasRoute: typeof AuthenticatedDemandasRouteWithChildren
+  AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
+  AuthenticatedProcessosRoute: typeof AuthenticatedProcessosRouteWithChildren
+  AuthenticatedAdminConfiguracoesRoute: typeof AuthenticatedAdminConfiguracoesRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -270,8 +458,10 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedBuscaRoute: AuthenticatedBuscaRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedDemandasRoute: AuthenticatedDemandasRoute,
-  AuthenticatedProcessosRoute: AuthenticatedProcessosRoute,
+  AuthenticatedDemandasRoute: AuthenticatedDemandasRouteWithChildren,
+  AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
+  AuthenticatedProcessosRoute: AuthenticatedProcessosRouteWithChildren,
+  AuthenticatedAdminConfiguracoesRoute: AuthenticatedAdminConfiguracoesRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

@@ -1,4 +1,5 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router";
+import { AnimatePresence, motion } from "motion/react";
 import { useAuth } from "@/hooks/use-auth";
 import { AppSidebar } from "@/components/intrahub/AppSidebar";
 import { Topbar } from "@/components/intrahub/Topbar";
@@ -20,6 +21,7 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthenticatedLayout() {
   const { loading, user } = useAuth();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   if (loading) {
     return (
@@ -37,7 +39,17 @@ function AuthenticatedLayout() {
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
-          <Outlet />
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={pathname}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.18 }}
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
     </div>

@@ -11,6 +11,7 @@ import {
 import appCss from "../styles.css?url";
 import { AuthProvider } from "@/hooks/use-auth";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/components/intrahub/ThemeProvider";
 
 function NotFoundComponent() {
   return (
@@ -91,7 +92,9 @@ function RootShell({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        {children}
+        <ThemeProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </ThemeProvider>
         <Scripts />
       </body>
     </html>
@@ -102,10 +105,8 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Outlet />
-        <Toaster position="top-right" richColors />
-      </AuthProvider>
+      <Outlet />
+      <Toaster position="top-right" richColors />
     </QueryClientProvider>
   );
 }

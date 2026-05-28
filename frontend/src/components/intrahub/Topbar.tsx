@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { Search, ChevronRight, User, LogOut } from "lucide-react";
+import { Search, ChevronRight, User, LogOut, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -14,6 +14,8 @@ import {
 import { NotificationDropdown } from "@/components/intrahub/NotificationDropdown";
 import { SearchModal } from "@/components/intrahub/SearchModal";
 import { useAuth } from "@/hooks/use-auth";
+import { useTheme } from "@/components/intrahub/ThemeProvider";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const ROUTE_LABELS: Record<string, string> = {
   dashboard: "Dashboard",
@@ -49,6 +51,7 @@ function Breadcrumb() {
 export function Topbar() {
   const [searchOpen, setSearchOpen] = useState(false);
   const { displayName, initials, user, signOut } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -81,6 +84,23 @@ export function Topbar() {
         <div className="flex items-center gap-1">
           <NotificationDropdown />
 
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Alternar tema"
+                  onClick={toggleTheme}
+                >
+                  {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Alternar tema</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-9 gap-2 px-2">
@@ -99,7 +119,7 @@ export function Topbar() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate({ to: "/configuracoes" })}>
+              <DropdownMenuItem onClick={() => navigate({ to: "/perfil" })}>
                 <User className="mr-2 h-4 w-4" /> Meu perfil
               </DropdownMenuItem>
               <DropdownMenuSeparator />
