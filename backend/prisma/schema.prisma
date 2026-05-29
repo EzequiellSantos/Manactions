@@ -19,6 +19,7 @@ model Usuario {
   ativo                 Boolean  @default(true)
   notificacoesEmail     Boolean  @default(true)
   notificacoesInApp     Boolean  @default(true)
+  recebeDemandas        Boolean  @default(true)
   criadoEm              DateTime @default(now())
   atualizadoEm          DateTime @updatedAt
 

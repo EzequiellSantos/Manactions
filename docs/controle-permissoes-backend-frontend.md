@@ -40,9 +40,9 @@ Observação: se você usa outro fluxo de migrations, adapte os comandos.
 
 **2) Atualizar DTOs e tipos do backend**
 - Arquivos a editar:
-  - `backend/src/usuarios/dto/update-usuario.dto.ts` -> permitir `recebeDemandas?: boolean` como `@IsBoolean() @IsOptional()`
-  - `backend/src/usuarios/dto/usuario-response.dto.ts` -> expor `recebeDemandas?: boolean` no schema de resposta
-  - `backend/src/usuarios/usuarios.service.ts` -> aceitar `recebeDemandas` nas atualizações feitas por admin (adicionar método para admin atualizar `areaId`/`recebeDemandas` se preferir endpoint separado)
+  - `backend/src/usuarios/dto/admin-update-usuario.dto.ts` -> permitir `areaId?: string | null` e `recebeDemandas?: boolean` para atualização admin
+  - `backend/src/usuarios/dto/usuario-response.dto.ts` -> expor `recebeDemandas` no schema de resposta
+  - `backend/src/usuarios/usuarios.service.ts` -> aceitar `recebeDemandas` nas atualizações feitas por admin (adicionar método `updateByAdmin`)
 
 **3) Criar/alterar endpoint admin para atualizar `areaId` e `recebeDemandas`**
 - Opções:
@@ -93,6 +93,18 @@ Tempo estimado (aprox.)
 Observações de segurança e compatibilidade
 - Sempre valide autorização no backend. Frontend apenas controla UX.
 - Ao rodar migration, verifique staging/produção com cautela (backup/planos de rollback).
+
+---
+
+## Progresso desta etapa
+- :check: Adicionado campo `recebeDemandas` em `backend/prisma/schema.prisma`
+- :check: Criado DTO `backend/src/usuarios/dto/admin-update-usuario.dto.ts` para atualização admin
+- :check: Atualizado `backend/src/usuarios/dto/usuario-response.dto.ts` para expor `recebeDemandas`
+- :check: Adicionado endpoint admin `PATCH /usuarios/:id` em `backend/src/usuarios/usuarios.controller.ts`
+- :check: Implementado `UsuariosService.updateByAdmin` em `backend/src/usuarios/usuarios.service.ts`
+- :check: Atualizado `backend/src/areas/areas.service.ts` para carregar `recebeDemandas` em `responsaveis`
+- :check: Atualizado `backend/src/demandas/demandas.service.ts` para não notificar responsáveis que têm `recebeDemandas = false`
+- :check: Atualizado `backend/src/demandas/demandas.service.ts` para impedir que usuários com `recebeDemandas = false` assumam demandas
 
 ---
 

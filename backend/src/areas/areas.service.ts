@@ -17,6 +17,7 @@ const areaListInclude = {
       email: true,
       cargo: true,
       avatarUrl: true,
+      recebeDemandas: true,
     },
   },
   canaisContato: true,

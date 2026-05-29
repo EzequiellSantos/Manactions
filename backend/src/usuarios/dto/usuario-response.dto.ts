@@ -53,6 +53,9 @@ export class UsuarioDetalheDto {
   area?: AreaResumoDto;
 
   @ApiProperty()
+  recebeDemandas: boolean;
+
+  @ApiProperty()
   criadoEm: Date;
 
   @ApiProperty()
@@ -89,6 +92,9 @@ export class UsuarioListItemDto {
 
   @ApiPropertyOptional({ type: AreaResumoDto })
   area?: AreaResumoDto;
+
+  @ApiProperty()
+  recebeDemandas: boolean;
 }
 
 export class UsuarioEstatisticasDto {

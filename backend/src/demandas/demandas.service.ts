@@ -120,6 +120,7 @@ export class DemandasService {
             email: true,
             notificacoesEmail: true,
             notificacoesInApp: true,
+            recebeDemandas: true,
           },
         },
       },
@@ -159,7 +160,7 @@ export class DemandasService {
     const link = this.notificacoesService.buildDemandaLink(demanda.id);
 
     for (const responsavel of area.responsaveis) {
-      if (responsavel.id === solicitante.id) {
+      if (responsavel.id === solicitante.id || responsavel.recebeDemandas === false) {
         continue;
       }
 
@@ -267,6 +268,14 @@ export class DemandasService {
 
   async assumirDemanda(id: string, usuarioLogado: Usuario) {
     const demanda = await this.findById(id, usuarioLogado);
+
+    if (
+      usuarioLogado.papel !== Papel.ADMIN &&
+      usuarioLogado.recebeDemandas === false &&
+      demanda.responsavelId !== usuarioLogado.id
+    ) {
+      throw new ForbiddenException('Usuário não pode assumir demandas no momento');
+    }
 
     if (demanda.responsavelId === usuarioLogado.id) {
       return demanda;
