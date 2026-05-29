@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
 import {
   Form,
   FormControl,
@@ -50,6 +51,7 @@ export function DemandaForm({ areaId, areaNome }: DemandaFormProps) {
       prazo: "",
     },
   });
+  const { loading } = useAuth();
   const createMutation = useMutation({
     mutationFn: createDemanda,
     onSuccess: async (demanda) => {
@@ -65,6 +67,7 @@ export function DemandaForm({ areaId, areaNome }: DemandaFormProps) {
   });
 
   function onSubmitConnected(values: DemandaFormValues) {
+    if (loading) return;
     createMutation.mutate({
       areaId,
       titulo: values.titulo,
@@ -176,7 +179,7 @@ export function DemandaForm({ areaId, areaNome }: DemandaFormProps) {
           )}
         />
 
-        <Button type="submit" className="gap-2" disabled={createMutation.isPending}>
+        <Button type="submit" className="gap-2" disabled={createMutation.isPending || loading}>
           {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           {createMutation.isPending ? "Enviando..." : "Enviar Demanda"}
         </Button>

@@ -63,16 +63,17 @@ function nextStatus(status: DemandaStatus): DemandaStatus | null {
 
 function DemandaDetailPage() {
   const { id } = Route.useParams();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const queryClient = useQueryClient();
   const [comentario, setComentario] = useState("");
 
   const { data: demanda, isLoading, isError } = useQuery({
     queryKey: ["demandas", id],
     queryFn: () => getDemandaById(id),
+    enabled: !loading,
   });
-  const { data: areas = [] } = useQuery({ queryKey: ["areas"], queryFn: getAreas });
-  const { data: usuarios = [] } = useQuery({ queryKey: ["usuarios"], queryFn: getUsers });
+  const { data: areas = [] } = useQuery({ queryKey: ["areas"], queryFn: getAreas, enabled: !loading });
+  const { data: usuarios = [] } = useQuery({ queryKey: ["usuarios"], queryFn: getUsers, enabled: !loading });
 
   const refreshDemandas = async () => {
     await Promise.all([

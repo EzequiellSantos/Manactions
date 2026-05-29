@@ -6,6 +6,7 @@ import { CanalContato } from "@/components/intrahub/CanalContato";
 import { DemandaForm } from "@/components/intrahub/DemandaForm";
 import { ResponsavelCard } from "@/components/intrahub/ResponsavelCard";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getAreaIcon } from "@/lib/area-icons";
 import { getAreaBySlugFromApi } from "@/lib/backend/areas";
@@ -17,9 +18,11 @@ export const Route = createFileRoute("/_authenticated/areas/$slug")({
 
 function AreaDetailPage() {
   const { slug } = Route.useParams();
+  const { loading } = useAuth();
   const { data: area, isLoading, isError } = useQuery({
     queryKey: ["areas", slug],
     queryFn: () => getAreaBySlugFromApi(slug),
+    enabled: !loading,
   });
 
   if (isLoading) {

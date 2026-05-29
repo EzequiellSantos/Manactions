@@ -17,7 +17,7 @@ export const Route = createFileRoute("/_authenticated/perfil")({
 });
 
 export function PerfilPage() {
-  const { displayName, initials, user } = useAuth();
+  const { displayName, initials, user, loading } = useAuth();
   const queryClient = useQueryClient();
   const [nome, setNome] = useState(displayName);
   const [cargo, setCargo] = useState("");
@@ -28,6 +28,7 @@ export function PerfilPage() {
   const { data: profile } = useQuery({
     queryKey: ["profile"],
     queryFn: getProfile,
+    enabled: !loading,
   });
   const updateMutation = useMutation({
     mutationFn: updateProfile,

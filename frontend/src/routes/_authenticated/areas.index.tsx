@@ -20,12 +20,13 @@ export const Route = createFileRoute("/_authenticated/areas/")({
 });
 
 function AreasPage() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [categoria, setCategoria] = useState("todas");
   const isAdmin = user?.user_metadata?.role === "admin";
   const { data: allAreas = [], isLoading, isError } = useQuery({
     queryKey: ["areas"],
     queryFn: getAreas,
+    enabled: !loading,
   });
 
   const categorias = useMemo(() => Array.from(new Set(allAreas.map((area) => area.categoria))), [allAreas]);

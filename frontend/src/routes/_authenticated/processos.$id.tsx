@@ -38,19 +38,22 @@ function ProcessoDetailPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const isAdmin = user?.user_metadata?.role === "admin";
   const { data: processo, isLoading, isError } = useQuery({
     queryKey: ["processos", id],
     queryFn: () => getProcessoByIdFromApi(id),
+    enabled: !loading,
   });
   const { data: processos = [] } = useQuery({
     queryKey: ["processos"],
     queryFn: getProcessos,
+    enabled: !loading,
   });
   const { data: areas = [] } = useQuery({
     queryKey: ["areas"],
     queryFn: getAreas,
+    enabled: !loading,
   });
   const publishMutation = useMutation({
     mutationFn: () => publishProcesso(id),

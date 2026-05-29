@@ -15,11 +15,11 @@ export const Route = createFileRoute("/_authenticated/admin/configuracoes")({
 });
 
 function AdminConfiguracoesPage() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const queryClient = useQueryClient();
-  const { data: usuarios = [], isLoading: loadingUsuarios } = useQuery({ queryKey: ["usuarios"], queryFn: getUsers });
-  const { data: areas = [], isLoading: loadingAreas } = useQuery({ queryKey: ["areas"], queryFn: getAreas });
-  const { data: processos = [] } = useQuery({ queryKey: ["processos"], queryFn: getProcessos });
+  const { data: usuarios = [], isLoading: loadingUsuarios } = useQuery({ queryKey: ["usuarios"], queryFn: getUsers, enabled: !loading });
+  const { data: areas = [], isLoading: loadingAreas } = useQuery({ queryKey: ["areas"], queryFn: getAreas, enabled: !loading });
+  const { data: processos = [] } = useQuery({ queryKey: ["processos"], queryFn: getProcessos, enabled: !loading });
   const categorias = Array.from(new Set(processos.map((processo) => processo.categoria).filter(Boolean)));
   const deleteUserMutation = useMutation({
     mutationFn: deleteUser,

@@ -43,7 +43,7 @@ function toCsv(rows: Demanda[], areas: { id: string; nome: string }[]) {
 }
 
 function DemandasPage() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [tab, setTab] = useState("minhas");
   const [status, setStatus] = useState("todos");
   const [area, setArea] = useState("todas");
@@ -53,10 +53,12 @@ function DemandasPage() {
   const { data: demandas = [], isLoading, isError } = useQuery({
     queryKey: ["demandas"],
     queryFn: getDemandas,
+    enabled: !loading,
   });
   const { data: areas = [] } = useQuery({
     queryKey: ["areas"],
     queryFn: getAreas,
+    enabled: !loading,
   });
 
   const filtered = useMemo(() => {

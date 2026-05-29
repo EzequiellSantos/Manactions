@@ -45,7 +45,7 @@ function ProcessosPage() {
     tags: "",
     publicado: true,
   });
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const queryClient = useQueryClient();
   const role = user?.user_metadata?.role;
   const canManage = role === "admin" || role === "gestor";
@@ -53,14 +53,17 @@ function ProcessosPage() {
   const { data: allProcessos = [], isLoading, isError } = useQuery({
     queryKey: ["processos"],
     queryFn: getProcessos,
+    enabled: !loading,
   });
   const { data: categoriasBackend = [] } = useQuery({
     queryKey: ["processos", "categorias"],
     queryFn: getProcessoCategorias,
+    enabled: !loading,
   });
   const { data: areas = [] } = useQuery({
     queryKey: ["areas"],
     queryFn: getAreas,
+    enabled: !loading,
   });
 
   const createMutation = useMutation({

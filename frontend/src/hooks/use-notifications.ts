@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import {
   getNotifications,
@@ -22,10 +23,12 @@ export function useNotifications() {
   const initializedRef = useRef(false);
   const previousIdsRef = useRef(new Set<string>());
   const queryClient = useQueryClient();
+  const { loading } = useAuth();
 
   const query = useQuery({
     queryKey: ["notifications"],
     queryFn: getNotifications,
+    enabled: !loading,
     refetchInterval: 30_000,
   });
 

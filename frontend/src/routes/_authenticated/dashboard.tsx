@@ -43,10 +43,10 @@ const STAT_CARDS = [
 ] as const;
 
 function DashboardPage() {
-  const { displayName } = useAuth();
+  const { displayName, loading } = useAuth();
   const firstName = displayName.split(" ")[0];
-  const { data: areas = [] } = useQuery({ queryKey: ["areas"], queryFn: getAreas });
-  const { data: dashboard } = useQuery({ queryKey: ["dashboard"], queryFn: getDashboard });
+  const { data: areas = [] } = useQuery({ queryKey: ["areas"], queryFn: getAreas, enabled: !loading });
+  const { data: dashboard } = useQuery({ queryKey: ["dashboard"], queryFn: getDashboard, enabled: !loading });
 
   const dashboardStats = dashboard?.stats ?? {
     totalAreas: areas.length,

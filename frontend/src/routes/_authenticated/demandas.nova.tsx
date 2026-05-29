@@ -9,6 +9,7 @@ import { FileUpload } from "@/components/intrahub/FileUpload";
 import { PrioridadeBadge } from "@/components/intrahub/PrioridadeBadge";
 import { Stepper } from "@/components/intrahub/Stepper";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
 import {
   Form,
   FormControl,
@@ -55,9 +56,11 @@ function NovaDemandaPage() {
   const [query, setQuery] = useState("");
   const [confirmado, setConfirmado] = useState(false);
   const [successId, setSuccessId] = useState<string | null>(null);
+  const { loading } = useAuth();
   const { data: allAreas = [], isLoading: loadingAreas } = useQuery({
     queryKey: ["areas"],
     queryFn: getAreas,
+    enabled: !loading,
   });
   const createMutation = useMutation({
     mutationFn: createDemanda,
@@ -284,7 +287,7 @@ function NovaDemandaPage() {
 
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={() => setEtapa(2)}>Voltar</Button>
-            <Button type="button" disabled={!confirmado} className="gap-2" onClick={submitDemand}>
+            <Button type="button" disabled={!confirmado || loading} className="gap-2" onClick={submitDemand}>
               <Send className="h-4 w-4" />
               {createMutation.isPending ? "Enviando..." : "Enviar Demanda"}
             </Button>
