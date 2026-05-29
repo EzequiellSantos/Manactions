@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -31,6 +31,7 @@ import type { Area, PrioridadeDemanda } from "@/lib/types";
 import { getAreaIcon } from "@/lib/area-icons";
 import { getAreas } from "@/lib/backend/areas";
 import { createDemanda } from "@/lib/backend/demandas";
+import { getDemandaCategoryOptions } from "@/lib/demanda-categories";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/demandas/nova")({
@@ -84,6 +85,11 @@ function NovaDemandaPage() {
     const q = query.toLowerCase().trim();
     return allAreas.filter((area) => !q || area.nome.toLowerCase().includes(q) || area.descricao.toLowerCase().includes(q));
   }, [allAreas, query]);
+  const categoriaOptions = useMemo(() => getDemandaCategoryOptions(areaSelecionada), [areaSelecionada]);
+
+  useEffect(() => {
+    form.setValue("categoria", "");
+  }, [areaSelecionada?.id, form]);
 
   if (successId) {
     return (
@@ -216,7 +222,7 @@ function NovaDemandaPage() {
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger></FormControl>
                     <SelectContent>
-                      {(areaSelecionada?.processos.map((p) => p.categoria) ?? ["Geral"]).map((categoria) => (
+                      {categoriaOptions.map((categoria) => (
                         <SelectItem key={categoria} value={categoria}>{categoria}</SelectItem>
                       ))}
                     </SelectContent>

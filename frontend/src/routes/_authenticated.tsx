@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
 import { useAuth } from "@/hooks/use-auth";
@@ -21,7 +22,22 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthenticatedLayout() {
   const { loading, user } = useAuth();
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const location = useRouterState({ select: (state) => state.location });
+  const pathname = location.pathname;
+  const redirectingRef = useRef(false);
+
+  useEffect(() => {
+    if (user) {
+      redirectingRef.current = false;
+      return;
+    }
+
+    if (loading || redirectingRef.current) return;
+
+    redirectingRef.current = true;
+    const params = new URLSearchParams({ redirect: location.href });
+    window.location.replace(`/login?${params.toString()}`);
+  }, [loading, user, location.href]);
 
   if (loading) {
     return (
@@ -31,7 +47,13 @@ function AuthenticatedLayout() {
     );
   }
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-surface">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen w-full bg-surface">
