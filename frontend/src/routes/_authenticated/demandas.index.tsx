@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { Download, Plus } from "lucide-react";
 import { DemandaRow } from "@/components/intrahub/DemandaRow";
 import { Button } from "@/components/ui/button";
@@ -12,13 +13,13 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  AREAS,
-  DEMANDAS,
   DEMANDA_STATUS_OPTIONS,
   PRIORIDADE_OPTIONS,
   getAreaById,
   type Demanda,
 } from "@/lib/mock-data";
+import { getAreas } from "@/lib/backend/areas";
+import { getDemandas } from "@/lib/backend/demandas";
 
 export const Route = createFileRoute("/_authenticated/demandas/")({
   head: () => ({ meta: [{ title: "Minhas Demandas — IntraHub" }] }),
@@ -27,12 +28,12 @@ export const Route = createFileRoute("/_authenticated/demandas/")({
 
 const PAGE_SIZE = 5;
 
-function toCsv(rows: Demanda[]) {
+function toCsv(rows: Demanda[], areas: { id: string; nome: string }[]) {
   const header = ["ID", "Título", "Área", "Prioridade", "Status", "Criada em", "Prazo"];
   const body = rows.map((demanda) => [
     demanda.id,
     demanda.titulo,
-    getAreaById(demanda.areaId)?.nome ?? demanda.areaId,
+    areas.find((area) => area.id === demanda.areaId)?.nome ?? getAreaById(demanda.areaId)?.nome ?? demanda.areaId,
     demanda.prioridade,
     demanda.status,
     demanda.criadaEm.toISOString(),
@@ -50,9 +51,17 @@ function DemandasPage() {
   const [prioridade, setPrioridade] = useState("todas");
   const [periodo, setPeriodo] = useState("todos");
   const [page, setPage] = useState(1);
+  const { data: demandas = [], isLoading, isError } = useQuery({
+    queryKey: ["demandas"],
+    queryFn: getDemandas,
+  });
+  const { data: areas = [] } = useQuery({
+    queryKey: ["areas"],
+    queryFn: getAreas,
+  });
 
   const filtered = useMemo(() => {
-    return DEMANDAS.filter((demanda) => {
+    return demandas.filter((demanda) => {
       if (status !== "todos" && demanda.status !== status) return false;
       if (area !== "todas" && demanda.areaId !== area) return false;
       if (prioridade !== "todas" && demanda.prioridade !== prioridade) return false;
@@ -65,13 +74,13 @@ function DemandasPage() {
       if (tab === "area" && demanda.areaId !== "ti") return false;
       return true;
     });
-  }, [area, periodo, prioridade, status, tab]);
+  }, [area, demandas, periodo, prioridade, status, tab]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   function exportCsv() {
-    const blob = new Blob([toCsv(filtered)], { type: "text/csv;charset=utf-8" });
+    const blob = new Blob([toCsv(filtered, areas)], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -121,7 +130,7 @@ function DemandasPage() {
           <SelectTrigger><SelectValue placeholder="Área" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="todas">Todas as áreas</SelectItem>
-            {AREAS.map((item) => <SelectItem key={item.id} value={item.id}>{item.nome}</SelectItem>)}
+            {areas.map((item) => <SelectItem key={item.id} value={item.id}>{item.nome}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={prioridade} onValueChange={(value) => { setPrioridade(value); setPage(1); }}>
@@ -141,6 +150,9 @@ function DemandasPage() {
       </div>
 
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-soft">
+        {isLoading && <div className="p-8 text-sm text-muted-foreground">Carregando demandas...</div>}
+        {isError && <div className="p-8 text-sm text-destructive">Não foi possível carregar as demandas do backend.</div>}
+        {!isLoading && !isError && (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[980px] text-sm">
             <thead className="bg-surface text-xs uppercase tracking-wide text-muted-foreground">
@@ -157,10 +169,21 @@ function DemandasPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {paged.map((demanda) => <DemandaRow key={demanda.id} demanda={demanda} />)}
+              {paged.map((demanda) => {
+                const demandaArea = areas.find((item) => item.id === demanda.areaId);
+                return (
+                  <DemandaRow
+                    key={demanda.id}
+                    demanda={demanda}
+                    areaNome={demandaArea?.nome}
+                    responsavel={demandaArea?.responsaveis.find((item) => item.id === demanda.responsavelId)}
+                  />
+                );
+              })}
             </tbody>
           </table>
         </div>
+        )}
         <div className="flex items-center justify-between border-t border-border px-4 py-3 text-sm text-muted-foreground">
           <span>{filtered.length} demandas encontradas</span>
           <div className="flex items-center gap-2">

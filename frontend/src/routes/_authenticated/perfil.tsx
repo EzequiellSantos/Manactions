@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Camera, ListChecks, Loader2, Save } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -8,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/use-auth";
+import { getProfile, updateProfile } from "@/lib/backend/profile";
 
 export const Route = createFileRoute("/_authenticated/perfil")({
   head: () => ({ meta: [{ title: "Meu Perfil — IntraHub" }] }),
@@ -16,16 +18,24 @@ export const Route = createFileRoute("/_authenticated/perfil")({
 
 export function PerfilPage() {
   const { displayName, initials, user } = useAuth();
-  const [saving, setSaving] = useState(false);
   const [emailNotify, setEmailNotify] = useState(true);
   const [inAppNotify, setInAppNotify] = useState(true);
+  const { data: profile } = useQuery({
+    queryKey: ["profile"],
+    queryFn: getProfile,
+  });
+  const updateMutation = useMutation({
+    mutationFn: updateProfile,
+    onSuccess: () => toast.success("Perfil atualizado"),
+  });
 
   function save() {
-    setSaving(true);
-    window.setTimeout(() => {
-      setSaving(false);
-      toast.success("Perfil atualizado", { description: "Os dados serão persistidos pelo backend depois." });
-    }, 600);
+    updateMutation.mutate({
+      preferencias: {
+        email: emailNotify,
+        inApp: inAppNotify,
+      },
+    });
   }
 
   return (
@@ -60,23 +70,23 @@ export function PerfilPage() {
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label>Nome</Label>
-                <Input defaultValue={displayName} />
+                <Input defaultValue={profile?.nome ?? displayName} />
               </div>
               <div className="space-y-2">
                 <Label>E-mail</Label>
-                <Input value={user?.email ?? ""} readOnly />
+                <Input value={profile?.email ?? user?.email ?? ""} readOnly />
               </div>
               <div className="space-y-2">
                 <Label>Cargo</Label>
-                <Input defaultValue="Analista de Operações" />
+                <Input defaultValue={profile?.cargo ?? ""} />
               </div>
               <div className="space-y-2">
                 <Label>Departamento</Label>
-                <Input defaultValue="Operações" />
+                <Input defaultValue={profile?.departamento ?? ""} />
               </div>
               <div className="space-y-2">
                 <Label>Telefone</Label>
-                <Input defaultValue="+55 11 90000-0000" />
+                <Input defaultValue={profile?.telefone ?? ""} />
               </div>
             </div>
           </section>
@@ -101,9 +111,9 @@ export function PerfilPage() {
             </div>
           </section>
 
-          <Button type="button" className="gap-2" disabled={saving} onClick={save}>
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            {saving ? "Salvando..." : "Salvar Alterações"}
+          <Button type="button" className="gap-2" disabled={updateMutation.isPending} onClick={save}>
+            {updateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            {updateMutation.isPending ? "Salvando..." : "Salvar Alterações"}
           </Button>
         </main>
       </div>

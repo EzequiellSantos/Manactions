@@ -1,4 +1,5 @@
-import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Download, Eye, ThumbsDown, ThumbsUp } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -8,14 +9,11 @@ import {
   getAreaById,
   getProcessoById,
 } from "@/lib/mock-data";
+import { getAreas } from "@/lib/backend/areas";
+import { getProcessoByIdFromApi, getProcessos } from "@/lib/backend/processos";
 
 export const Route = createFileRoute("/_authenticated/processos/$id")({
-  loader: ({ params }) => {
-    const processo = getProcessoById(params.id);
-    if (!processo) throw notFound();
-    return { processo };
-  },
-  head: ({ loaderData }) => ({ meta: [{ title: `${loaderData?.processo.titulo ?? "Processo"} — IntraHub` }] }),
+  head: () => ({ meta: [{ title: "Processo — IntraHub" }] }),
   component: ProcessoDetailPage,
 });
 
@@ -41,10 +39,31 @@ function MarkdownLite({ content }: { content: string }) {
 }
 
 function ProcessoDetailPage() {
-  const { processo } = Route.useLoaderData();
+  const { id } = Route.useParams();
   const navigate = useNavigate();
-  const area = getAreaById(processo.areaId);
-  const relacionados = (processo.relacionados ?? []).map(getProcessoById).filter(Boolean);
+  const { data: processo, isLoading, isError } = useQuery({
+    queryKey: ["processos", id],
+    queryFn: () => getProcessoByIdFromApi(id),
+  });
+  const { data: processos = [] } = useQuery({
+    queryKey: ["processos"],
+    queryFn: getProcessos,
+  });
+  const { data: areas = [] } = useQuery({
+    queryKey: ["areas"],
+    queryFn: getAreas,
+  });
+
+  if (isLoading) {
+    return <div className="mx-auto w-full max-w-7xl rounded-xl border border-border bg-card p-8 text-sm text-muted-foreground">Carregando processo...</div>;
+  }
+
+  if (isError || !processo) {
+    return <div className="mx-auto w-full max-w-7xl rounded-xl border border-destructive/30 bg-card p-8 text-sm text-destructive">Não foi possível carregar este processo do backend.</div>;
+  }
+
+  const area = areas.find((item) => item.id === processo.areaId) ?? getAreaById(processo.areaId);
+  const relacionados = (processo.relacionados ?? []).map((relatedId) => processos.find((item) => item.id === relatedId) ?? getProcessoById(relatedId)).filter(Boolean);
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6">

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { Plus, Search } from "lucide-react";
 import { ProcessoCard } from "@/components/intrahub/ProcessoCard";
 import { Button } from "@/components/ui/button";
@@ -18,11 +19,11 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
-  AREAS,
-  PROCESSOS,
   PROCESSO_CATEGORIAS,
   PROCESSO_TAGS,
 } from "@/lib/mock-data";
+import { getAreas } from "@/lib/backend/areas";
+import { getProcessos } from "@/lib/backend/processos";
 
 export const Route = createFileRoute("/_authenticated/processos/")({
   head: () => ({ meta: [{ title: "Processos e Base de Conhecimento — IntraHub" }] }),
@@ -34,17 +35,27 @@ function ProcessosPage() {
   const [areaId, setAreaId] = useState("todas");
   const [categoria, setCategoria] = useState("todas");
   const [tag, setTag] = useState("todas");
+  const { data: allProcessos = [], isLoading, isError } = useQuery({
+    queryKey: ["processos"],
+    queryFn: getProcessos,
+  });
+  const { data: areas = [] } = useQuery({
+    queryKey: ["areas"],
+    queryFn: getAreas,
+  });
+  const categorias = useMemo(() => Array.from(new Set(allProcessos.map((processo) => processo.categoria))), [allProcessos]);
+  const tags = useMemo(() => Array.from(new Set(allProcessos.flatMap((processo) => processo.tags ?? []))), [allProcessos]);
 
   const processos = useMemo(() => {
     const q = query.toLowerCase().trim();
-    return PROCESSOS.filter((processo) => {
+    return allProcessos.filter((processo) => {
       if (q && !`${processo.titulo} ${processo.descricao} ${processo.tags?.join(" ")}`.toLowerCase().includes(q)) return false;
       if (areaId !== "todas" && processo.areaId !== areaId) return false;
       if (categoria !== "todas" && processo.categoria !== categoria) return false;
       if (tag !== "todas" && !(processo.tags ?? []).includes(tag)) return false;
       return true;
     });
-  }, [areaId, categoria, query, tag]);
+  }, [allProcessos, areaId, categoria, query, tag]);
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6">
@@ -63,7 +74,7 @@ function ProcessosPage() {
         <aside className="rounded-xl border border-border bg-card p-4 shadow-soft">
           <h2 className="font-display text-sm font-semibold">Categorias</h2>
           <Accordion type="single" collapsible className="mt-3">
-            {PROCESSO_CATEGORIAS.map((item) => (
+            {(categorias.length > 0 ? categorias : PROCESSO_CATEGORIAS).map((item) => (
               <AccordionItem key={item} value={item}>
                 <AccordionTrigger className="text-sm">{item}</AccordionTrigger>
                 <AccordionContent>
@@ -90,26 +101,34 @@ function ProcessosPage() {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todas">Todas as áreas</SelectItem>
-                {AREAS.map((area) => <SelectItem key={area.id} value={area.id}>{area.nome}</SelectItem>)}
+                {areas.map((area) => <SelectItem key={area.id} value={area.id}>{area.nome}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={categoria} onValueChange={setCategoria}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todas">Todas categorias</SelectItem>
-                {PROCESSO_CATEGORIAS.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}
+                {(categorias.length > 0 ? categorias : PROCESSO_CATEGORIAS).map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={tag} onValueChange={setTag}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todas">Todas tags</SelectItem>
-                {PROCESSO_TAGS.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}
+                {(tags.length > 0 ? tags : PROCESSO_TAGS).map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
 
-          {processos.length === 0 ? (
+          {isLoading ? (
+            <div className="rounded-xl border border-border bg-card p-10 text-center text-sm text-muted-foreground">
+              Carregando processos...
+            </div>
+          ) : isError ? (
+            <div className="rounded-xl border border-destructive/30 bg-card p-10 text-center text-sm text-destructive">
+              Não foi possível carregar os processos do backend.
+            </div>
+          ) : processos.length === 0 ? (
             <div className="rounded-xl border border-border bg-card p-10 text-center text-sm text-muted-foreground">
               Nenhum processo encontrado com os filtros atuais.
             </div>

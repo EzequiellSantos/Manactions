@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { AreaCard } from "@/components/intrahub/AreaCard";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
-import { AREAS, AREA_CATEGORIAS } from "@/lib/mock-data";
+import { getAreas } from "@/lib/backend/areas";
 
 export const Route = createFileRoute("/_authenticated/areas/")({
   head: () => ({ meta: [{ title: "Áreas da Empresa — IntraHub" }] }),
@@ -22,11 +23,17 @@ function AreasPage() {
   const { user } = useAuth();
   const [categoria, setCategoria] = useState("todas");
   const isAdmin = user?.user_metadata?.role === "admin";
+  const { data: allAreas = [], isLoading, isError } = useQuery({
+    queryKey: ["areas"],
+    queryFn: getAreas,
+  });
+
+  const categorias = useMemo(() => Array.from(new Set(allAreas.map((area) => area.categoria))), [allAreas]);
 
   const areas = useMemo(() => {
-    if (categoria === "todas") return AREAS;
-    return AREAS.filter((area) => area.categoria === categoria);
-  }, [categoria]);
+    if (categoria === "todas") return allAreas;
+    return allAreas.filter((area) => area.categoria === categoria);
+  }, [allAreas, categoria]);
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6">
@@ -45,7 +52,7 @@ function AreasPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todas">Todas as categorias</SelectItem>
-              {AREA_CATEGORIAS.map((item) => (
+              {categorias.map((item) => (
                 <SelectItem key={item} value={item}>
                   {item}
                 </SelectItem>
@@ -64,11 +71,18 @@ function AreasPage() {
         </div>
       </header>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {areas.map((area, index) => (
-          <AreaCard key={area.id} area={area} index={index} />
-        ))}
-      </div>
+      {isLoading && <div className="rounded-xl border border-border bg-card p-8 text-sm text-muted-foreground">Carregando áreas...</div>}
+      {isError && <div className="rounded-xl border border-destructive/30 bg-card p-8 text-sm text-destructive">Não foi possível carregar as áreas do backend.</div>}
+      {!isLoading && !isError && areas.length === 0 && (
+        <div className="rounded-xl border border-border bg-card p-8 text-sm text-muted-foreground">Nenhuma área encontrada.</div>
+      )}
+      {!isLoading && !isError && areas.length > 0 && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {areas.map((area, index) => (
+            <AreaCard key={area.id} area={area} index={index} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

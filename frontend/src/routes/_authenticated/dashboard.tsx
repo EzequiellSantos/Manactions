@@ -1,8 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { Layers, ListChecks, ClockAlert, ClipboardList, ArrowUpRight, Megaphone } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { AREAS, AVISOS, DASHBOARD_STATS, DEMANDAS_RECENTES, getAreaIcon } from "@/lib/mock-data";
+import { AVISOS, getAreaIcon } from "@/lib/mock-data";
+import { getAreas } from "@/lib/backend/areas";
+import { getDemandas } from "@/lib/backend/demandas";
 import { StatusBadge } from "@/components/intrahub/StatusBadge";
 import { cn } from "@/lib/utils";
 
@@ -42,6 +45,17 @@ const STAT_CARDS = [
 function DashboardPage() {
   const { displayName } = useAuth();
   const firstName = displayName.split(" ")[0];
+  const { data: areas = [] } = useQuery({ queryKey: ["areas"], queryFn: getAreas });
+  const { data: demandas = [] } = useQuery({ queryKey: ["demandas"], queryFn: getDemandas });
+
+  const dashboardStats = {
+    totalAreas: areas.length,
+    minhasDemandasAbertas: demandas.filter((demanda) =>
+      ["aberta", "em_analise", "em_andamento"].includes(demanda.status),
+    ).length,
+    pendentesAprovacao: demandas.filter((demanda) => demanda.status === "em_analise").length,
+    processosRecentes: areas.reduce((total, area) => total + area.processos.length, 0),
+  };
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-8">
@@ -62,7 +76,7 @@ function DashboardPage() {
       {/* Stat cards */}
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {STAT_CARDS.map((c, i) => {
-          const value = DASHBOARD_STATS[c.key];
+          const value = dashboardStats[c.key];
           const Icon = c.icon;
           return (
             <motion.div
@@ -97,7 +111,7 @@ function DashboardPage() {
           </Link>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {AREAS.slice(0, 6).map((a, i) => {
+          {areas.slice(0, 6).map((a, i) => {
             const Icon = getAreaIcon(a.icone);
             return (
               <motion.div
@@ -153,17 +167,19 @@ function DashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {DEMANDAS_RECENTES.map((d) => (
+                {demandas.slice(0, 5).map((d) => (
                   <tr key={d.id} className="transition hover:bg-accent/50">
                     <td className="px-4 py-3">
                       <p className="font-medium text-foreground">{d.titulo}</p>
                       <p className="text-xs text-muted-foreground">#{d.id}</p>
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground">{d.area}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{areas.find((area) => area.id === d.areaId)?.nome ?? d.areaId}</td>
                     <td className="px-4 py-3">
                       <StatusBadge status={d.status} />
                     </td>
-                    <td className="px-4 py-3 text-right text-xs text-muted-foreground">{d.data}</td>
+                    <td className="px-4 py-3 text-right text-xs text-muted-foreground">
+                      {new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" }).format(d.atualizadaEm)}
+                    </td>
                   </tr>
                 ))}
               </tbody>

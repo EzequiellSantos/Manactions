@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
   FileText,
@@ -10,12 +11,13 @@ import {
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
-  AREAS,
-  DEMANDAS,
   TODOS_RESPONSAVEIS,
   getAreaById,
   getAreaIcon,
 } from "@/lib/mock-data";
+import { getAreas } from "@/lib/backend/areas";
+import { getDemandas } from "@/lib/backend/demandas";
+import { getProcessos } from "@/lib/backend/processos";
 import { cn } from "@/lib/utils";
 
 interface SearchModalProps {
@@ -38,6 +40,10 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const { data: areas = [] } = useQuery({ queryKey: ["areas"], queryFn: getAreas, enabled: open });
+  const { data: demandas = [] } = useQuery({ queryKey: ["demandas"], queryFn: getDemandas, enabled: open });
+  const { data: processos = [] } = useQuery({ queryKey: ["processos"], queryFn: getProcessos, enabled: open });
+  const responsaveis = useMemo(() => areas.flatMap((area) => area.responsaveis), [areas]);
 
   useEffect(() => {
     if (!open) {
@@ -58,7 +64,7 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
     const q = debouncedQuery.toLowerCase().trim();
     if (!q) return [];
 
-    const areaResults: SearchResult[] = AREAS.filter((area) =>
+    const areaResults: SearchResult[] = areas.filter((area) =>
       `${area.nome} ${area.descricao} ${area.categoria}`.toLowerCase().includes(q),
     ).map((area) => ({
       id: `area-${area.id}`,
@@ -70,7 +76,7 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
       slug: area.slug,
     }));
 
-    const responsaveis: SearchResult[] = TODOS_RESPONSAVEIS.filter((responsavel) =>
+    const responsavelResults: SearchResult[] = (responsaveis.length > 0 ? responsaveis : TODOS_RESPONSAVEIS).filter((responsavel) =>
       `${responsavel.nome} ${responsavel.cargo} ${responsavel.email}`.toLowerCase().includes(q),
     ).map((responsavel) => {
       const area = getAreaById(responsavel.areaId);
@@ -85,7 +91,7 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
       };
     });
 
-    const demandas: SearchResult[] = DEMANDAS.filter((demanda) =>
+    const demandaResults: SearchResult[] = demandas.filter((demanda) =>
       `${demanda.id} ${demanda.titulo} ${demanda.descricao} ${demanda.categoria}`.toLowerCase().includes(q),
     ).map((demanda) => ({
       id: `demanda-${demanda.id}`,
@@ -97,22 +103,23 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
       demandaId: demanda.id,
     }));
 
-    const processos: SearchResult[] = AREAS.flatMap((area) =>
-      area.processos
+    const processoResults: SearchResult[] = processos
         .filter((processo) => `${processo.titulo} ${processo.descricao} ${processo.categoria}`.toLowerCase().includes(q))
-        .map((processo) => ({
+        .map((processo) => {
+          const area = areas.find((item) => item.id === processo.areaId) ?? getAreaById(processo.areaId);
+          return ({
           id: `processo-${processo.id}`,
           group: "Processos" as const,
           title: processo.titulo,
-          description: `${processo.categoria} · ${area.nome}`,
+          description: `${processo.categoria} · ${area?.nome ?? processo.areaId}`,
           icon: FileText,
           to: "area" as const,
-          slug: area.slug,
-        })),
-    );
+          slug: area?.slug ?? "tecnologia-da-informacao",
+        });
+      });
 
-    return [...areaResults, ...responsaveis, ...demandas, ...processos].slice(0, 16);
-  }, [debouncedQuery]);
+    return [...areaResults, ...responsavelResults, ...demandaResults, ...processoResults].slice(0, 16);
+  }, [areas, debouncedQuery, demandas, processos, responsaveis]);
 
   useEffect(() => {
     setActiveIndex(0);

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, CalendarClock, FileText, Send, Tag, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { PrioridadeBadge } from "@/components/intrahub/PrioridadeBadge";
@@ -20,19 +21,15 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
-  DEMANDAS,
   getAreaById,
   getResponsavelById,
   getUsuarioById,
 } from "@/lib/mock-data";
+import { getAreas } from "@/lib/backend/areas";
+import { addDemandaComment, getDemandaById } from "@/lib/backend/demandas";
 
 export const Route = createFileRoute("/_authenticated/demandas/$id")({
-  loader: ({ params }) => {
-    const demanda = DEMANDAS.find((item) => item.id === params.id);
-    if (!demanda) throw notFound();
-    return { demanda };
-  },
-  head: ({ loaderData }) => ({ meta: [{ title: `#${loaderData?.demanda.id ?? ""} — IntraHub` }] }),
+  head: () => ({ meta: [{ title: "Demanda — IntraHub" }] }),
   component: DemandaDetailPage,
 });
 
@@ -52,20 +49,39 @@ function initials(name?: string) {
 }
 
 function DemandaDetailPage() {
-  const { demanda } = Route.useLoaderData();
+  const { id } = Route.useParams();
   const [comentario, setComentario] = useState("");
-  const area = getAreaById(demanda.areaId);
-  const responsavel = getResponsavelById(demanda.responsavelId);
-  const solicitante = getUsuarioById(demanda.solicitanteId);
-  const isSolicitante = demanda.solicitanteId === "user-1";
-  const isResponsavel = demanda.responsavelId === "ti-2" || area?.id === "ti";
+  const { data: demanda, isLoading, isError } = useQuery({
+    queryKey: ["demandas", id],
+    queryFn: () => getDemandaById(id),
+  });
+  const { data: areas = [] } = useQuery({
+    queryKey: ["areas"],
+    queryFn: getAreas,
+  });
+
+  if (isLoading) {
+    return <div className="mx-auto w-full max-w-7xl rounded-xl border border-border bg-card p-8 text-sm text-muted-foreground">Carregando demanda...</div>;
+  }
+
+  if (isError || !demanda) {
+    return <div className="mx-auto w-full max-w-7xl rounded-xl border border-destructive/30 bg-card p-8 text-sm text-destructive">Não foi possível carregar esta demanda do backend.</div>;
+  }
+
+  const demandaAtual = demanda;
+  const area = areas.find((item) => item.id === demandaAtual.areaId) ?? getAreaById(demandaAtual.areaId);
+  const responsavel = getResponsavelById(demandaAtual.responsavelId);
+  const solicitante = getUsuarioById(demandaAtual.solicitanteId);
+  const isSolicitante = demandaAtual.solicitanteId === "user-1";
+  const isResponsavel = demandaAtual.responsavelId === "ti-2" || area?.id === "ti";
 
   function action(label: string) {
     toast.info(label, { description: "A ação será conectada ao backend na próxima etapa." });
   }
 
-  function sendComment() {
+  async function sendComment() {
     if (!comentario.trim()) return;
+    await addDemandaComment(demandaAtual.id, comentario);
     setComentario("");
     toast.success("Comentário pronto para envio", { description: "O backend persistirá essa mensagem depois." });
   }

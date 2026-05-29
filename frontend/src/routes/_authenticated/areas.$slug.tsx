@@ -1,4 +1,5 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
 import { motion } from "motion/react";
 import { CanalContato } from "@/components/intrahub/CanalContato";
@@ -6,20 +7,29 @@ import { DemandaForm } from "@/components/intrahub/DemandaForm";
 import { ResponsavelCard } from "@/components/intrahub/ResponsavelCard";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AREAS, getAreaIcon } from "@/lib/mock-data";
+import { getAreaIcon } from "@/lib/mock-data";
+import { getAreaBySlugFromApi } from "@/lib/backend/areas";
 
 export const Route = createFileRoute("/_authenticated/areas/$slug")({
-  loader: ({ params }) => {
-    const area = AREAS.find((item) => item.slug === params.slug);
-    if (!area) throw notFound();
-    return { area };
-  },
-  head: ({ loaderData }) => ({ meta: [{ title: `${loaderData?.area.nome ?? "Área"} — IntraHub` }] }),
+  head: () => ({ meta: [{ title: "Área — IntraHub" }] }),
   component: AreaDetailPage,
 });
 
 function AreaDetailPage() {
-  const { area } = Route.useLoaderData();
+  const { slug } = Route.useParams();
+  const { data: area, isLoading, isError } = useQuery({
+    queryKey: ["areas", slug],
+    queryFn: () => getAreaBySlugFromApi(slug),
+  });
+
+  if (isLoading) {
+    return <div className="mx-auto w-full max-w-7xl rounded-xl border border-border bg-card p-8 text-sm text-muted-foreground">Carregando área...</div>;
+  }
+
+  if (isError || !area) {
+    return <div className="mx-auto w-full max-w-7xl rounded-xl border border-destructive/30 bg-card p-8 text-sm text-destructive">Não foi possível carregar esta área do backend.</div>;
+  }
+
   const Icon = getAreaIcon(area.icone);
 
   return (

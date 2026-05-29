@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { ArrowLeft, CheckCircle2, Search, Send } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -26,12 +27,13 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  AREAS,
   PRIORIDADE_OPTIONS,
   getAreaIcon,
   type Area,
   type PrioridadeDemanda,
 } from "@/lib/mock-data";
+import { getAreas } from "@/lib/backend/areas";
+import { createDemanda } from "@/lib/backend/demandas";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/demandas/nova")({
@@ -55,6 +57,14 @@ function NovaDemandaPage() {
   const [query, setQuery] = useState("");
   const [confirmado, setConfirmado] = useState(false);
   const [successId, setSuccessId] = useState<string | null>(null);
+  const { data: allAreas = [], isLoading: loadingAreas } = useQuery({
+    queryKey: ["areas"],
+    queryFn: getAreas,
+  });
+  const createMutation = useMutation({
+    mutationFn: createDemanda,
+    onSuccess: (demanda) => setSuccessId(demanda.id),
+  });
 
   const form = useForm<DemandaValues>({
     resolver: zodResolver(demandaSchema),
@@ -71,8 +81,8 @@ function NovaDemandaPage() {
   const values = form.watch();
   const areas = useMemo(() => {
     const q = query.toLowerCase().trim();
-    return AREAS.filter((area) => !q || area.nome.toLowerCase().includes(q) || area.descricao.toLowerCase().includes(q));
-  }, [query]);
+    return allAreas.filter((area) => !q || area.nome.toLowerCase().includes(q) || area.descricao.toLowerCase().includes(q));
+  }, [allAreas, query]);
 
   if (successId) {
     return (
@@ -96,7 +106,15 @@ function NovaDemandaPage() {
 
   function submitDemand() {
     if (!confirmado) return;
-    setSuccessId(String(Math.floor(2500 + Math.random() * 100)));
+    if (!areaSelecionada) return;
+    createMutation.mutate({
+      areaId: areaSelecionada.id,
+      titulo: values.titulo,
+      categoria: values.categoria,
+      prioridade: values.prioridade,
+      descricao: values.descricao,
+      prazo: values.prazo || undefined,
+    });
   }
 
   return (
@@ -128,6 +146,11 @@ function NovaDemandaPage() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {loadingAreas && (
+              <div className="rounded-xl border border-border bg-card p-5 text-sm text-muted-foreground">
+                Carregando áreas...
+              </div>
+            )}
             {areas.map((area) => {
               const Icon = getAreaIcon(area.icone);
               const selected = areaSelecionada?.id === area.id;
@@ -265,7 +288,7 @@ function NovaDemandaPage() {
             <Button type="button" variant="outline" onClick={() => setEtapa(2)}>Voltar</Button>
             <Button type="button" disabled={!confirmado} className="gap-2" onClick={submitDemand}>
               <Send className="h-4 w-4" />
-              Enviar Demanda
+              {createMutation.isPending ? "Enviando..." : "Enviar Demanda"}
             </Button>
           </div>
         </section>
