@@ -1,5 +1,5 @@
 import { CheckCircle2, CircleDot, MessageSquare, UserCheck, XCircle } from "lucide-react";
-import { getResponsavelById, getUsuarioById, type EventoHistorico } from "@/lib/mock-data";
+import type { EventoHistorico } from "@/lib/mock-data";
 
 const EVENT_ICON: Record<string, typeof CircleDot> = {
   criada: CircleDot,
@@ -23,11 +23,11 @@ function formatDateTime(date: Date) {
 
 interface TimelineEventoProps {
   evento: EventoHistorico;
+  autorNome?: string;
 }
 
-export function TimelineEvento({ evento }: TimelineEventoProps) {
+export function TimelineEvento({ evento, autorNome }: TimelineEventoProps) {
   const Icon = EVENT_ICON[evento.tipo] ?? CircleDot;
-  const autor = getResponsavelById(evento.autorId) ?? getUsuarioById(evento.autorId);
 
   return (
     <div className="relative flex gap-3 pb-5 last:pb-0">
@@ -38,7 +38,7 @@ export function TimelineEvento({ evento }: TimelineEventoProps) {
       <div className="min-w-0">
         <p className="text-sm font-medium text-foreground">{evento.descricao}</p>
         <p className="mt-1 text-xs text-muted-foreground">
-          {autor?.nome ?? "Sistema"} · {formatDateTime(evento.criadoEm)}
+          {autorNome ?? "Sistema"} - {formatDateTime(evento.criadoEm)}
         </p>
       </div>
     </div>

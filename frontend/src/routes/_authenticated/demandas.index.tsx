@@ -12,12 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  DEMANDA_STATUS_OPTIONS,
-  PRIORIDADE_OPTIONS,
-  getAreaById,
-  type Demanda,
-} from "@/lib/mock-data";
+import type { Demanda, DemandaStatus, PrioridadeDemanda } from "@/lib/mock-data";
 import { getAreas } from "@/lib/backend/areas";
 import { getDemandas } from "@/lib/backend/demandas";
 
@@ -27,13 +22,15 @@ export const Route = createFileRoute("/_authenticated/demandas/")({
 });
 
 const PAGE_SIZE = 5;
+const DEMANDA_STATUS_OPTIONS: DemandaStatus[] = ["aberta", "em_analise", "em_andamento", "concluida", "cancelada", "rejeitada"];
+const PRIORIDADE_OPTIONS: PrioridadeDemanda[] = ["baixa", "media", "alta", "urgente"];
 
 function toCsv(rows: Demanda[], areas: { id: string; nome: string }[]) {
   const header = ["ID", "Título", "Área", "Prioridade", "Status", "Criada em", "Prazo"];
   const body = rows.map((demanda) => [
     demanda.id,
     demanda.titulo,
-    areas.find((area) => area.id === demanda.areaId)?.nome ?? getAreaById(demanda.areaId)?.nome ?? demanda.areaId,
+    areas.find((area) => area.id === demanda.areaId)?.nome ?? demanda.areaId,
     demanda.prioridade,
     demanda.status,
     demanda.criadaEm.toISOString(),

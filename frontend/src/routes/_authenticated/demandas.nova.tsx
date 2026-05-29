@@ -26,12 +26,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  PRIORIDADE_OPTIONS,
-  getAreaIcon,
-  type Area,
-  type PrioridadeDemanda,
-} from "@/lib/mock-data";
+import type { Area, PrioridadeDemanda } from "@/lib/mock-data";
+import { getAreaIcon } from "@/lib/area-icons";
 import { getAreas } from "@/lib/backend/areas";
 import { createDemanda } from "@/lib/backend/demandas";
 import { cn } from "@/lib/utils";
@@ -48,6 +44,8 @@ const demandaSchema = z.object({
   descricao: z.string().min(20, "Descreva a demanda com pelo menos 20 caracteres.").max(1200, "Use até 1200 caracteres."),
   prazo: z.string().optional(),
 });
+
+const PRIORIDADE_OPTIONS: PrioridadeDemanda[] = ["baixa", "media", "alta", "urgente"];
 
 type DemandaValues = z.infer<typeof demandaSchema>;
 

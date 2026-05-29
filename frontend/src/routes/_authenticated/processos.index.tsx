@@ -18,10 +18,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import {
-  PROCESSO_CATEGORIAS,
-  PROCESSO_TAGS,
-} from "@/lib/mock-data";
 import { getAreas } from "@/lib/backend/areas";
 import { getProcessos } from "@/lib/backend/processos";
 
@@ -74,7 +70,7 @@ function ProcessosPage() {
         <aside className="rounded-xl border border-border bg-card p-4 shadow-soft">
           <h2 className="font-display text-sm font-semibold">Categorias</h2>
           <Accordion type="single" collapsible className="mt-3">
-            {(categorias.length > 0 ? categorias : PROCESSO_CATEGORIAS).map((item) => (
+            {categorias.map((item) => (
               <AccordionItem key={item} value={item}>
                 <AccordionTrigger className="text-sm">{item}</AccordionTrigger>
                 <AccordionContent>
@@ -108,14 +104,14 @@ function ProcessosPage() {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todas">Todas categorias</SelectItem>
-                {(categorias.length > 0 ? categorias : PROCESSO_CATEGORIAS).map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}
+                {categorias.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={tag} onValueChange={setTag}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todas">Todas tags</SelectItem>
-                {(tags.length > 0 ? tags : PROCESSO_TAGS).map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}
+                {tags.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -134,7 +130,13 @@ function ProcessosPage() {
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {processos.map((processo) => <ProcessoCard key={processo.id} processo={processo} />)}
+              {processos.map((processo) => (
+                <ProcessoCard
+                  key={processo.id}
+                  processo={processo}
+                  area={areas.find((area) => area.id === processo.areaId)}
+                />
+              ))}
             </div>
           )}
         </main>

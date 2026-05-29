@@ -1,7 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, Users } from "lucide-react";
 import { motion } from "motion/react";
-import { getAreaIcon, type Area } from "@/lib/mock-data";
+import { getAreaIcon } from "@/lib/area-icons";
+import type { Area } from "@/lib/mock-data";
 
 interface AreaCardProps {
   area: Area;

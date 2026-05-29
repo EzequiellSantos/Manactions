@@ -7,7 +7,7 @@ import { DemandaForm } from "@/components/intrahub/DemandaForm";
 import { ResponsavelCard } from "@/components/intrahub/ResponsavelCard";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getAreaIcon } from "@/lib/mock-data";
+import { getAreaIcon } from "@/lib/area-icons";
 import { getAreaBySlugFromApi } from "@/lib/backend/areas";
 
 export const Route = createFileRoute("/_authenticated/areas/$slug")({

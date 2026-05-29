@@ -1,7 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  getNotifications,
+  markAllNotificationsAsRead,
+  relativeNotificationTime,
+} from "@/lib/backend/notifications";
 
 export interface AppNotification {
   id: string;
@@ -13,113 +17,50 @@ export interface AppNotification {
   createdAt: Date;
 }
 
-const MOCK_NOTIFICATIONS: AppNotification[] = [
-  {
-    id: "1",
-    title: "Nova demanda atribuída",
-    description: "Solicitação de contratação aguardando sua análise.",
-    time: "há 5 min",
-    read: false,
-    type: "demanda",
-    createdAt: new Date(Date.now() - 5 * 60 * 1000),
-  },
-  {
-    id: "2",
-    title: "Aprovação pendente",
-    description: "Demanda #2487 do Financeiro precisa da sua aprovação.",
-    time: "há 1 h",
-    read: false,
-    type: "demanda",
-    createdAt: new Date(Date.now() - 60 * 60 * 1000),
-  },
-  {
-    id: "3",
-    title: "Aviso da Diretoria",
-    description: "Reunião geral amanhã às 10h no auditório.",
-    time: "há 3 h",
-    read: false,
-    type: "aviso",
-    createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
-  },
-  {
-    id: "4",
-    title: "Processo atualizado",
-    description: "POP de Compras teve nova revisão publicada.",
-    time: "ontem",
-    read: true,
-    type: "processo",
-    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
-  },
-];
-
-function relativeTime(date: Date) {
-  const diff = Math.max(1, Math.floor((Date.now() - date.getTime()) / 60000));
-  if (diff < 60) return `há ${diff} min`;
-  const hours = Math.floor(diff / 60);
-  if (hours < 24) return `há ${hours} h`;
-  return `há ${Math.floor(hours / 24)} d`;
-}
-
 export function useNotifications() {
   const [items, setItems] = useState<AppNotification[]>([]);
+  const initializedRef = useRef(false);
+  const previousIdsRef = useRef(new Set<string>());
+  const queryClient = useQueryClient();
 
   const query = useQuery({
     queryKey: ["notifications"],
-    queryFn: async (): Promise<AppNotification[]> => {
-      await new Promise((r) => setTimeout(r, 250));
-      return MOCK_NOTIFICATIONS;
-    },
+    queryFn: getNotifications,
+    refetchInterval: 30_000,
   });
 
   useEffect(() => {
-    if (query.data) setItems(query.data);
-  }, [query.data]);
+    if (!query.data) return;
 
-  useEffect(() => {
-    let channel: ReturnType<typeof supabase.channel> | undefined;
-    try {
-      channel = supabase
-        .channel("in-app-notifications")
-        .on(
-          "postgres_changes",
-          { event: "INSERT", schema: "public", table: "notifications" },
-          (payload) => {
-            const row = payload.new as {
-              id?: string;
-              title?: string;
-              description?: string;
-              type?: AppNotification["type"];
-              read?: boolean;
-              created_at?: string;
-            };
-            const createdAt = row.created_at ? new Date(row.created_at) : new Date();
-            const notification: AppNotification = {
-              id: row.id ?? crypto.randomUUID(),
-              title: row.title ?? "Nova notificação",
-              description: row.description ?? "Você recebeu uma nova atualização.",
-              type: row.type ?? "aviso",
-              read: row.read ?? false,
-              createdAt,
-              time: relativeTime(createdAt),
-            };
-            setItems((current) => [notification, ...current].slice(0, 10));
-            toast(notification.title, { description: notification.description, position: "bottom-right" });
-          },
-        )
-        .subscribe();
-    } catch {
-      channel = undefined;
+    const incoming = query.data;
+    setItems(incoming);
+
+    if (initializedRef.current) {
+      incoming
+        .filter((item) => !item.read && !previousIdsRef.current.has(item.id))
+        .forEach((item) => {
+          toast(item.title, { description: item.description, position: "bottom-right" });
+        });
     }
 
-    return () => {
-      if (channel) supabase.removeChannel(channel);
-    };
-  }, []);
+    previousIdsRef.current = new Set(incoming.map((item) => item.id));
+    initializedRef.current = true;
+  }, [query.data]);
+
+  const markAllMutation = useMutation({
+    mutationFn: markAllNotificationsAsRead,
+    onMutate: () => {
+      setItems((current) => current.map((item) => ({ ...item, read: true })));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
 
   const data = useMemo(
     () =>
       items
-        .map((item) => ({ ...item, time: relativeTime(item.createdAt) }))
+        .map((item) => ({ ...item, time: relativeNotificationTime(item.createdAt) }))
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
         .slice(0, 10),
     [items],
@@ -128,6 +69,6 @@ export function useNotifications() {
   return {
     ...query,
     data,
-    markAllAsRead: () => setItems((current) => current.map((item) => ({ ...item, read: true }))),
+    markAllAsRead: () => markAllMutation.mutate(),
   };
 }

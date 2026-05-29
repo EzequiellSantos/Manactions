@@ -24,13 +24,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  AREA_CATEGORIAS,
-  AREA_ICON_OPTIONS,
-  getAreaIcon,
-  type Area,
-  type CanalTipo,
-} from "@/lib/mock-data";
+import { AREA_ICON_OPTIONS, getAreaIcon } from "@/lib/area-icons";
+import type { Area, CanalTipo } from "@/lib/mock-data";
+
+const AREA_CATEGORIAS = ["Tecnologia", "Pessoas", "Administrativo", "Comunicacao", "Governanca", "Operacao", "Geral"];
 
 const canalSchema = z.object({
   tipo: z.enum(["email", "discord", "whatsapp", "teams", "outro"]),

@@ -20,13 +20,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  getAreaById,
-  getResponsavelById,
-  getUsuarioById,
-} from "@/lib/mock-data";
+import { useAuth } from "@/hooks/use-auth";
 import { getAreas } from "@/lib/backend/areas";
 import { addDemandaComment, getDemandaById } from "@/lib/backend/demandas";
+import { getUsers } from "@/lib/backend/users";
 
 export const Route = createFileRoute("/_authenticated/demandas/$id")({
   head: () => ({ meta: [{ title: "Demanda — IntraHub" }] }),
@@ -50,6 +47,7 @@ function initials(name?: string) {
 
 function DemandaDetailPage() {
   const { id } = Route.useParams();
+  const { user } = useAuth();
   const [comentario, setComentario] = useState("");
   const { data: demanda, isLoading, isError } = useQuery({
     queryKey: ["demandas", id],
@@ -58,6 +56,10 @@ function DemandaDetailPage() {
   const { data: areas = [] } = useQuery({
     queryKey: ["areas"],
     queryFn: getAreas,
+  });
+  const { data: usuarios = [] } = useQuery({
+    queryKey: ["usuarios"],
+    queryFn: getUsers,
   });
 
   if (isLoading) {
@@ -69,11 +71,15 @@ function DemandaDetailPage() {
   }
 
   const demandaAtual = demanda;
-  const area = areas.find((item) => item.id === demandaAtual.areaId) ?? getAreaById(demandaAtual.areaId);
-  const responsavel = getResponsavelById(demandaAtual.responsavelId);
-  const solicitante = getUsuarioById(demandaAtual.solicitanteId);
-  const isSolicitante = demandaAtual.solicitanteId === "user-1";
-  const isResponsavel = demandaAtual.responsavelId === "ti-2" || area?.id === "ti";
+  const area = areas.find((item) => item.id === demandaAtual.areaId);
+  const responsavel = area?.responsaveis.find((item) => item.id === demandaAtual.responsavelId);
+  const solicitante = usuarios.find((item) => item.id === demandaAtual.solicitanteId);
+  const isSolicitante = demandaAtual.solicitanteId === user?.id;
+  const isResponsavel = demandaAtual.responsavelId === user?.id || area?.responsaveis.some((item) => item.id === user?.id);
+  const autores = new Map([
+    ...usuarios.map((item) => [item.id, item.nome] as const),
+    ...(area?.responsaveis ?? []).map((item) => [item.id, item.nome] as const),
+  ]);
 
   function action(label: string) {
     toast.info(label, { description: "A ação será conectada ao backend na próxima etapa." });
@@ -172,7 +178,9 @@ function DemandaDetailPage() {
           <section className="rounded-xl border border-border bg-card p-6 shadow-soft">
             <h2 className="font-display text-lg font-semibold">Histórico</h2>
             <div className="mt-5">
-              {demanda.historico.map((evento) => <TimelineEvento key={evento.id} evento={evento} />)}
+              {demanda.historico.map((evento) => (
+                <TimelineEvento key={evento.id} evento={evento} autorNome={autores.get(evento.autorId)} />
+              ))}
             </div>
           </section>
 

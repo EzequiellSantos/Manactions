@@ -8,6 +8,21 @@ export class ApiError extends Error {
   }
 }
 
+type ApiEnvelope<T> = {
+  data: T;
+  message?: string;
+  statusCode?: number;
+};
+
+function isApiEnvelope<T>(value: unknown): value is ApiEnvelope<T> {
+  return (
+    value != null &&
+    typeof value === "object" &&
+    "data" in value &&
+    "statusCode" in value
+  );
+}
+
 /**
  * Cliente base para chamadas ao backend NestJS.
  * Anexa automaticamente o token de autenticação Supabase.
@@ -36,5 +51,7 @@ export async function apiFetch<T = unknown>(
   }
 
   if (res.status === 204) return undefined as T;
-  return res.json() as Promise<T>;
+
+  const json = (await res.json()) as T | ApiEnvelope<T>;
+  return isApiEnvelope<T>(json) ? json.data : json;
 }

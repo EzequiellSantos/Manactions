@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, Eye } from "lucide-react";
-import { getAreaById, type ProcessoArea } from "@/lib/mock-data";
+import type { ProcessoArea } from "@/lib/mock-data";
 
 function formatDate(date?: Date) {
   if (!date) return "-";
@@ -9,11 +9,13 @@ function formatDate(date?: Date) {
 
 interface ProcessoCardProps {
   processo: ProcessoArea;
+  area?: {
+    nome: string;
+    cor?: string;
+  };
 }
 
-export function ProcessoCard({ processo }: ProcessoCardProps) {
-  const area = getAreaById(processo.areaId);
-
+export function ProcessoCard({ processo, area }: ProcessoCardProps) {
   return (
     <article className="flex h-full flex-col rounded-xl border border-border bg-card p-5 shadow-soft transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-elevated">
       <div className="flex items-start justify-between gap-3">

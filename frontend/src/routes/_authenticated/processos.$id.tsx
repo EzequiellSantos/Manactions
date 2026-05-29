@@ -4,11 +4,6 @@ import { ArrowLeft, Download, Eye, ThumbsDown, ThumbsUp } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ProcessoCard } from "@/components/intrahub/ProcessoCard";
-import {
-  PROCESSOS,
-  getAreaById,
-  getProcessoById,
-} from "@/lib/mock-data";
 import { getAreas } from "@/lib/backend/areas";
 import { getProcessoByIdFromApi, getProcessos } from "@/lib/backend/processos";
 
@@ -62,8 +57,10 @@ function ProcessoDetailPage() {
     return <div className="mx-auto w-full max-w-7xl rounded-xl border border-destructive/30 bg-card p-8 text-sm text-destructive">Não foi possível carregar este processo do backend.</div>;
   }
 
-  const area = areas.find((item) => item.id === processo.areaId) ?? getAreaById(processo.areaId);
-  const relacionados = (processo.relacionados ?? []).map((relatedId) => processos.find((item) => item.id === relatedId) ?? getProcessoById(relatedId)).filter(Boolean);
+  const area = areas.find((item) => item.id === processo.areaId);
+  const relacionados = (processo.relacionados ?? [])
+    .map((relatedId) => processos.find((item) => item.id === relatedId))
+    .filter(Boolean);
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6">
@@ -146,8 +143,11 @@ function ProcessoDetailPage() {
         <h2 className="font-display text-lg font-semibold">Processos Relacionados</h2>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {relacionados.length > 0
-            ? relacionados.map((item) => item && <ProcessoCard key={item.id} processo={item} />)
-            : PROCESSOS.filter((item) => item.areaId === processo.areaId && item.id !== processo.id).slice(0, 3).map((item) => <ProcessoCard key={item.id} processo={item} />)}
+            ? relacionados.map((item) => item && <ProcessoCard key={item.id} processo={item} area={areas.find((areaItem) => areaItem.id === item.areaId)} />)
+            : processos
+                .filter((item) => item.areaId === processo.areaId && item.id !== processo.id)
+                .slice(0, 3)
+                .map((item) => <ProcessoCard key={item.id} processo={item} area={areas.find((areaItem) => areaItem.id === item.areaId)} />)}
         </div>
       </section>
     </div>

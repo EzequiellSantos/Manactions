@@ -3,9 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { Layers, ListChecks, ClockAlert, ClipboardList, ArrowUpRight, Megaphone } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { AVISOS, getAreaIcon } from "@/lib/mock-data";
+import { getAreaIcon } from "@/lib/area-icons";
 import { getAreas } from "@/lib/backend/areas";
-import { getDemandas } from "@/lib/backend/demandas";
+import { getDashboard } from "@/lib/backend/dashboard";
 import { StatusBadge } from "@/components/intrahub/StatusBadge";
 import { cn } from "@/lib/utils";
 
@@ -46,16 +46,17 @@ function DashboardPage() {
   const { displayName } = useAuth();
   const firstName = displayName.split(" ")[0];
   const { data: areas = [] } = useQuery({ queryKey: ["areas"], queryFn: getAreas });
-  const { data: demandas = [] } = useQuery({ queryKey: ["demandas"], queryFn: getDemandas });
+  const { data: dashboard } = useQuery({ queryKey: ["dashboard"], queryFn: getDashboard });
 
-  const dashboardStats = {
+  const dashboardStats = dashboard?.stats ?? {
     totalAreas: areas.length,
-    minhasDemandasAbertas: demandas.filter((demanda) =>
-      ["aberta", "em_analise", "em_andamento"].includes(demanda.status),
-    ).length,
-    pendentesAprovacao: demandas.filter((demanda) => demanda.status === "em_analise").length,
-    processosRecentes: areas.reduce((total, area) => total + area.processos.length, 0),
+    minhasDemandasAbertas: 0,
+    pendentesAprovacao: 0,
+    processosRecentes: 0,
   };
+  const quickAreas = dashboard?.areasDestaques.length ? dashboard.areasDestaques : areas;
+  const demandasRecentes = dashboard?.demandasRecentes ?? [];
+  const comunicados = dashboard?.comunicados ?? [];
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-8">
@@ -111,7 +112,7 @@ function DashboardPage() {
           </Link>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {areas.slice(0, 6).map((a, i) => {
+          {quickAreas.slice(0, 6).map((a, i) => {
             const Icon = getAreaIcon(a.icone);
             return (
               <motion.div
@@ -167,7 +168,7 @@ function DashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {demandas.slice(0, 5).map((d) => (
+                {demandasRecentes.slice(0, 5).map((d) => (
                   <tr key={d.id} className="transition hover:bg-accent/50">
                     <td className="px-4 py-3">
                       <p className="font-medium text-foreground">{d.titulo}</p>
@@ -182,6 +183,13 @@ function DashboardPage() {
                     </td>
                   </tr>
                 ))}
+                {demandasRecentes.length === 0 && (
+                  <tr>
+                    <td className="px-4 py-6 text-sm text-muted-foreground" colSpan={4}>
+                      Nenhuma demanda recente retornada pelo backend.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -196,7 +204,7 @@ function DashboardPage() {
             </div>
           </div>
           <div className="space-y-3">
-            {AVISOS.map((a) => (
+            {comunicados.map((a) => (
               <article
                 key={a.id}
                 className={cn(
@@ -218,6 +226,11 @@ function DashboardPage() {
                 </div>
               </article>
             ))}
+            {comunicados.length === 0 && (
+              <article className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground shadow-soft">
+                Nenhum comunicado retornado pelo backend.
+              </article>
+            )}
           </div>
         </div>
       </section>

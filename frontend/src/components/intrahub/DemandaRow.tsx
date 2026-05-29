@@ -3,12 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { PrioridadeBadge } from "@/components/intrahub/PrioridadeBadge";
 import { StatusBadge } from "@/components/intrahub/StatusBadge";
-import {
-  getAreaById,
-  getResponsavelById,
-  type Demanda,
-  type Responsavel,
-} from "@/lib/mock-data";
+import type { Demanda, Responsavel } from "@/lib/mock-data";
 
 function formatDate(date?: Date) {
   if (!date) return "-";
@@ -32,8 +27,7 @@ interface DemandaRowProps {
 }
 
 export function DemandaRow({ demanda, areaNome, responsavel: responsavelProp }: DemandaRowProps) {
-  const area = getAreaById(demanda.areaId);
-  const responsavel = responsavelProp ?? getResponsavelById(demanda.responsavelId);
+  const responsavel = responsavelProp;
 
   return (
     <tr className="group transition hover:bg-accent/50">
@@ -44,7 +38,7 @@ export function DemandaRow({ demanda, areaNome, responsavel: responsavelProp }: 
         </Link>
         <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{demanda.descricao}</p>
       </td>
-      <td className="px-4 py-3 align-middle text-muted-foreground">{areaNome ?? area?.nome ?? demanda.areaId}</td>
+      <td className="px-4 py-3 align-middle text-muted-foreground">{areaNome ?? demanda.areaId}</td>
       <td className="px-4 py-3 align-middle"><PrioridadeBadge prioridade={demanda.prioridade} /></td>
       <td className="px-4 py-3 align-middle"><StatusBadge status={demanda.status} /></td>
       <td className="px-4 py-3 align-middle">
