@@ -42,6 +42,13 @@ const STAT_CARDS = [
   { key: "processosRecentes", label: "Processos acessados", icon: ClipboardList, accent: "text-success bg-success/10" },
 ] as const;
 
+const STAT_CARD_LINKS: Record<(typeof STAT_CARDS)[number]["key"], "/areas" | "/demandas" | "/processos"> = {
+  totalAreas: "/areas",
+  minhasDemandasAbertas: "/demandas",
+  pendentesAprovacao: "/demandas",
+  processosRecentes: "/processos",
+};
+
 function DashboardPage() {
   const { displayName, loading } = useAuth();
   const firstName = displayName.split(" ")[0];
@@ -85,16 +92,20 @@ function DashboardPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: i * 0.05 }}
-              className="group rounded-xl border border-border bg-card p-5 shadow-soft transition hover:shadow-elevated"
             >
-              <div className="flex items-start justify-between">
-                <div className={cn("flex h-10 w-10 items-center justify-center rounded-lg", c.accent)}>
-                  <Icon className="h-5 w-5" />
+              <Link
+                to={STAT_CARD_LINKS[c.key]}
+                className="group block rounded-xl border border-border bg-card p-5 shadow-soft transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-elevated"
+              >
+                <div className="flex items-start justify-between">
+                  <div className={cn("flex h-10 w-10 items-center justify-center rounded-lg", c.accent)}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
                 </div>
-                <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
-              </div>
-              <p className="mt-4 font-display text-3xl font-bold tracking-tight">{value}</p>
-              <p className="mt-1 text-xs font-medium text-muted-foreground">{c.label}</p>
+                <p className="mt-4 font-display text-3xl font-bold tracking-tight">{value}</p>
+                <p className="mt-1 text-xs font-medium text-muted-foreground">{c.label}</p>
+              </Link>
             </motion.div>
           );
         })}

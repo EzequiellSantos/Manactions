@@ -131,9 +131,11 @@ function AreaDetailPage() {
                   <h3 className="mt-1 font-display text-base font-semibold">{processo.titulo}</h3>
                   <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{processo.descricao}</p>
                 </div>
-                <Button type="button" variant="outline" className="gap-2 sm:shrink-0">
-                  Ver Processo
-                  <ArrowRight className="h-4 w-4" />
+                <Button asChild variant="outline" className="gap-2 sm:shrink-0">
+                  <Link to="/processos/$id" params={{ id: processo.id }}>
+                    Ver Processo
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
                 </Button>
               </article>
             ))}

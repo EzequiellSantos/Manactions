@@ -17,7 +17,11 @@ interface ProcessoCardProps {
 
 export function ProcessoCard({ processo, area }: ProcessoCardProps) {
   return (
-    <article className="flex h-full flex-col rounded-xl border border-border bg-card p-5 shadow-soft transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-elevated">
+    <Link
+      to="/processos/$id"
+      params={{ id: processo.id }}
+      className="group flex h-full flex-col rounded-xl border border-border bg-card p-5 shadow-soft transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-elevated"
+    >
       <div className="flex items-start justify-between gap-3">
         <span
           className="rounded-md px-2.5 py-1 text-xs font-semibold text-white"
@@ -41,15 +45,11 @@ export function ProcessoCard({ processo, area }: ProcessoCardProps) {
       </div>
       <div className="mt-auto flex items-center justify-between pt-5">
         <span className="text-xs text-muted-foreground">Atualizado em {formatDate(processo.atualizadoEm)}</span>
-        <Link
-          to="/processos/$id"
-          params={{ id: processo.id }}
-          className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-        >
+        <span className="inline-flex items-center gap-1 text-sm font-medium text-primary group-hover:underline">
           Abrir
           <ArrowRight className="h-4 w-4" />
-        </Link>
+        </span>
       </div>
-    </article>
+    </Link>
   );
 }
