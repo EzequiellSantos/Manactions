@@ -1,6 +1,6 @@
 import { AlertTriangle, ChevronsUp, Minus, Signal } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { type PrioridadeDemanda } from "@/lib/mock-data";
+import { type PrioridadeDemanda } from "@/lib/types";
 
 const PRIORIDADE_MAP: Record<PrioridadeDemanda, { label: string; cls: string; icon: typeof Minus }> = {
   baixa: { label: "Baixa", cls: "bg-muted text-muted-foreground border-border", icon: Minus },

@@ -1,5 +1,5 @@
 import { apiFetch } from "@/lib/api";
-import type { Area, Demanda, Aviso } from "@/lib/mock-data";
+import type { Area, Demanda, Aviso } from "@/lib/types";
 import { normalizeArea, normalizeDemanda } from "@/lib/backend/normalizers";
 
 interface DashboardResponse {

@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Camera, ListChecks, Loader2, Save } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,11 @@ export const Route = createFileRoute("/_authenticated/perfil")({
 
 export function PerfilPage() {
   const { displayName, initials, user } = useAuth();
+  const queryClient = useQueryClient();
+  const [nome, setNome] = useState(displayName);
+  const [cargo, setCargo] = useState("");
+  const [departamento, setDepartamento] = useState("");
+  const [telefone, setTelefone] = useState("");
   const [emailNotify, setEmailNotify] = useState(true);
   const [inAppNotify, setInAppNotify] = useState(true);
   const { data: profile } = useQuery({
@@ -26,15 +31,34 @@ export function PerfilPage() {
   });
   const updateMutation = useMutation({
     mutationFn: updateProfile,
-    onSuccess: () => toast.success("Perfil atualizado"),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["profile"] }),
+        queryClient.invalidateQueries({ queryKey: ["usuarios"] }),
+      ]);
+      toast.success("Perfil atualizado");
+    },
+    onError: () => toast.error("Nao foi possivel atualizar o perfil"),
   });
+
+  useEffect(() => {
+    if (!profile) return;
+    setNome(profile.nome ?? displayName);
+    setCargo(profile.cargo ?? "");
+    setDepartamento(profile.departamento ?? "");
+    setTelefone(profile.telefone ?? "");
+    setEmailNotify(profile.notificacoesEmail ?? true);
+    setInAppNotify(profile.notificacoesInApp ?? true);
+  }, [displayName, profile]);
 
   function save() {
     updateMutation.mutate({
-      preferencias: {
-        email: emailNotify,
-        inApp: inAppNotify,
-      },
+      nome,
+      cargo,
+      departamento,
+      telefone,
+      notificacoesEmail: emailNotify,
+      notificacoesInApp: inAppNotify,
     });
   }
 
@@ -70,7 +94,7 @@ export function PerfilPage() {
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label>Nome</Label>
-                <Input defaultValue={profile?.nome ?? displayName} />
+                <Input value={nome} onChange={(event) => setNome(event.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>E-mail</Label>
@@ -78,15 +102,15 @@ export function PerfilPage() {
               </div>
               <div className="space-y-2">
                 <Label>Cargo</Label>
-                <Input defaultValue={profile?.cargo ?? ""} />
+                <Input value={cargo} onChange={(event) => setCargo(event.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Departamento</Label>
-                <Input defaultValue={profile?.departamento ?? ""} />
+                <Input value={departamento} onChange={(event) => setDepartamento(event.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Telefone</Label>
-                <Input defaultValue={profile?.telefone ?? ""} />
+                <Input value={telefone} onChange={(event) => setTelefone(event.target.value)} />
               </div>
             </div>
           </section>

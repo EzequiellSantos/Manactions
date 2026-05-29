@@ -1,5 +1,5 @@
 import { CheckCircle2, CircleDot, MessageSquare, UserCheck, XCircle } from "lucide-react";
-import type { EventoHistorico } from "@/lib/mock-data";
+import type { EventoHistorico } from "@/lib/types";
 
 const EVENT_ICON: Record<string, typeof CircleDot> = {
   criada: CircleDot,

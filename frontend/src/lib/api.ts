@@ -47,7 +47,18 @@ export async function apiFetch<T = unknown>(
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw new ApiError(res.status, text || `Request failed: ${res.status}`);
+    let message = text;
+    try {
+      const errorBody = JSON.parse(text) as { message?: string | string[]; error?: string };
+      if (Array.isArray(errorBody.message)) {
+        message = errorBody.message.join("; ");
+      } else {
+        message = errorBody.message ?? errorBody.error ?? text;
+      }
+    } catch {
+      message = text;
+    }
+    throw new ApiError(res.status, message || `Request failed: ${res.status}`);
   }
 
   if (res.status === 204) return undefined as T;

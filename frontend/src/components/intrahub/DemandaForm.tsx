@@ -1,5 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CalendarIcon, Paperclip, Send } from "lucide-react";
+import { CalendarIcon, Loader2, Paperclip, Send } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -21,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { type Area } from "@/lib/mock-data";
+import { createDemanda } from "@/lib/backend/demandas";
 
 const demandaSchema = z.object({
   titulo: z.string().min(4, "Informe um título com pelo menos 4 caracteres."),
@@ -39,6 +40,7 @@ interface DemandaFormProps {
 }
 
 export function DemandaForm({ areaId, areaNome }: DemandaFormProps) {
+  const queryClient = useQueryClient();
   const form = useForm<DemandaFormValues>({
     resolver: zodResolver(demandaSchema),
     defaultValues: {
@@ -48,17 +50,33 @@ export function DemandaForm({ areaId, areaNome }: DemandaFormProps) {
       prazo: "",
     },
   });
+  const createMutation = useMutation({
+    mutationFn: createDemanda,
+    onSuccess: async (demanda) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["demandas"] }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+        queryClient.invalidateQueries({ queryKey: ["areas"] }),
+      ]);
+      toast.success("Demanda enviada", { description: `Demanda #${demanda.id} criada.` });
+      form.reset({ titulo: "", descricao: "", prioridade: "media", prazo: "" });
+    },
+    onError: () => toast.error("Nao foi possivel enviar a demanda"),
+  });
 
-  function onSubmit(values: DemandaFormValues) {
-    toast.success("Demanda pronta para envio", {
-      description: `${values.titulo} será persistida quando o backend estiver conectado.`,
+  function onSubmitConnected(values: DemandaFormValues) {
+    createMutation.mutate({
+      areaId,
+      titulo: values.titulo,
+      descricao: values.descricao,
+      prioridade: values.prioridade,
+      prazo: values.prazo || undefined,
     });
-    form.reset({ titulo: "", descricao: "", prioridade: "media", prazo: "" });
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+      <form onSubmit={form.handleSubmit(onSubmitConnected)} className="space-y-5">
         <div className="rounded-xl border border-border bg-surface p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Área selecionada</p>
           <p className="mt-1 font-display text-base font-semibold">{areaNome ?? areaId}</p>
@@ -158,9 +176,9 @@ export function DemandaForm({ areaId, areaNome }: DemandaFormProps) {
           )}
         />
 
-        <Button type="submit" className="gap-2">
-          <Send className="h-4 w-4" />
-          Enviar Demanda
+        <Button type="submit" className="gap-2" disabled={createMutation.isPending}>
+          {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          {createMutation.isPending ? "Enviando..." : "Enviar Demanda"}
         </Button>
       </form>
     </Form>

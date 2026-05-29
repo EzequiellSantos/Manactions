@@ -1,11 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Download, Eye, ThumbsDown, ThumbsUp } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Download, Eye, Loader2, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ProcessoCard } from "@/components/intrahub/ProcessoCard";
+import { useAuth } from "@/hooks/use-auth";
 import { getAreas } from "@/lib/backend/areas";
-import { getProcessoByIdFromApi, getProcessos } from "@/lib/backend/processos";
+import { deleteProcesso, getProcessoByIdFromApi, getProcessos, publishProcesso } from "@/lib/backend/processos";
 
 export const Route = createFileRoute("/_authenticated/processos/$id")({
   head: () => ({ meta: [{ title: "Processo — IntraHub" }] }),
@@ -36,6 +37,9 @@ function MarkdownLite({ content }: { content: string }) {
 function ProcessoDetailPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const isAdmin = user?.user_metadata?.role === "admin";
   const { data: processo, isLoading, isError } = useQuery({
     queryKey: ["processos", id],
     queryFn: () => getProcessoByIdFromApi(id),
@@ -47,6 +51,30 @@ function ProcessoDetailPage() {
   const { data: areas = [] } = useQuery({
     queryKey: ["areas"],
     queryFn: getAreas,
+  });
+  const publishMutation = useMutation({
+    mutationFn: () => publishProcesso(id),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["processos", id] }),
+        queryClient.invalidateQueries({ queryKey: ["processos"] }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+      ]);
+      toast.success("Processo publicado");
+    },
+    onError: () => toast.error("Nao foi possivel publicar o processo"),
+  });
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteProcesso(id),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["processos"] }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+      ]);
+      toast.success("Processo removido");
+      navigate({ to: "/processos" });
+    },
+    onError: () => toast.error("Nao foi possivel remover o processo"),
   });
 
   if (isLoading) {
@@ -80,7 +108,21 @@ function ProcessoDetailPage() {
       </nav>
 
       <header className="rounded-xl border border-border bg-card p-6 shadow-soft">
-        <h1 className="font-display text-3xl font-bold tracking-tight">{processo.titulo}</h1>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <h1 className="font-display text-3xl font-bold tracking-tight">{processo.titulo}</h1>
+          {isAdmin && (
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="outline" className="gap-2" disabled={publishMutation.isPending} onClick={() => publishMutation.mutate()}>
+                {publishMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                Publicar
+              </Button>
+              <Button type="button" variant="destructive" className="gap-2" disabled={deleteMutation.isPending} onClick={() => deleteMutation.mutate()}>
+                {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                Excluir
+              </Button>
+            </div>
+          )}
+        </div>
         <div className="mt-4 flex flex-wrap gap-3 text-sm text-muted-foreground">
           <span>{area?.nome}</span>
           <span>Autor: {processo.autor}</span>

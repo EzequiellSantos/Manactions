@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, Eye } from "lucide-react";
-import type { ProcessoArea } from "@/lib/mock-data";
+import type { ProcessoArea } from "@/lib/types";
 
 function formatDate(date?: Date) {
   if (!date) return "-";

@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { Plus, Search } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2, Plus, Search } from "lucide-react";
+import { toast } from "sonner";
 import { ProcessoCard } from "@/components/intrahub/ProcessoCard";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,11 +19,14 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/hooks/use-auth";
 import { getAreas } from "@/lib/backend/areas";
-import { getProcessos } from "@/lib/backend/processos";
+import { createProcesso, getProcessoCategorias, getProcessos } from "@/lib/backend/processos";
 
 export const Route = createFileRoute("/_authenticated/processos/")({
-  head: () => ({ meta: [{ title: "Processos e Base de Conhecimento — IntraHub" }] }),
+  head: () => ({ meta: [{ title: "Processos e Base de Conhecimento - IntraHub" }] }),
   component: ProcessosPage,
 });
 
@@ -31,15 +35,52 @@ function ProcessosPage() {
   const [areaId, setAreaId] = useState("todas");
   const [categoria, setCategoria] = useState("todas");
   const [tag, setTag] = useState("todas");
+  const [newOpen, setNewOpen] = useState(false);
+  const [draft, setDraft] = useState({
+    titulo: "",
+    descricao: "",
+    conteudo: "",
+    areaId: "",
+    categoria: "",
+    tags: "",
+    publicado: true,
+  });
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const role = user?.user_metadata?.role;
+  const canManage = role === "admin" || role === "gestor";
+
   const { data: allProcessos = [], isLoading, isError } = useQuery({
     queryKey: ["processos"],
     queryFn: getProcessos,
+  });
+  const { data: categoriasBackend = [] } = useQuery({
+    queryKey: ["processos", "categorias"],
+    queryFn: getProcessoCategorias,
   });
   const { data: areas = [] } = useQuery({
     queryKey: ["areas"],
     queryFn: getAreas,
   });
-  const categorias = useMemo(() => Array.from(new Set(allProcessos.map((processo) => processo.categoria))), [allProcessos]);
+
+  const createMutation = useMutation({
+    mutationFn: createProcesso,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["processos"] }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+      ]);
+      setNewOpen(false);
+      setDraft({ titulo: "", descricao: "", conteudo: "", areaId: "", categoria: "", tags: "", publicado: true });
+      toast.success("Processo criado");
+    },
+    onError: () => toast.error("Nao foi possivel criar o processo"),
+  });
+
+  const categorias = useMemo(
+    () => categoriasBackend.length > 0 ? categoriasBackend : Array.from(new Set(allProcessos.map((processo) => processo.categoria))),
+    [allProcessos, categoriasBackend],
+  );
   const tags = useMemo(() => Array.from(new Set(allProcessos.flatMap((processo) => processo.tags ?? []))), [allProcessos]);
 
   const processos = useMemo(() => {
@@ -53,6 +94,23 @@ function ProcessosPage() {
     });
   }, [allProcessos, areaId, categoria, query, tag]);
 
+  function submitProcesso() {
+    if (!draft.titulo.trim() || !draft.descricao.trim() || !draft.conteudo.trim() || !draft.areaId || !draft.categoria.trim()) {
+      toast.error("Preencha titulo, area, categoria, descricao e conteudo.");
+      return;
+    }
+
+    createMutation.mutate({
+      titulo: draft.titulo.trim(),
+      descricao: draft.descricao.trim(),
+      conteudo: draft.conteudo.trim(),
+      areaId: draft.areaId,
+      categoria: draft.categoria.trim(),
+      publicado: draft.publicado,
+      tags: draft.tags.split(",").map((item) => item.trim()).filter(Boolean),
+    });
+  }
+
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -60,10 +118,12 @@ function ProcessosPage() {
           <h1 className="font-display text-2xl font-bold tracking-tight">Processos e Base de Conhecimento</h1>
           <p className="mt-1 text-sm text-muted-foreground">Consulte POPs, fluxos, guias e documentos internos.</p>
         </div>
-        <Button type="button" className="gap-2">
-          <Plus className="h-4 w-4" />
-          Novo Processo
-        </Button>
+        {canManage && (
+          <Button type="button" className="gap-2" onClick={() => setNewOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Novo Processo
+          </Button>
+        )}
       </header>
 
       <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
@@ -96,7 +156,7 @@ function ProcessosPage() {
             <Select value={areaId} onValueChange={setAreaId}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="todas">Todas as áreas</SelectItem>
+                <SelectItem value="todas">Todas as areas</SelectItem>
                 {areas.map((area) => <SelectItem key={area.id} value={area.id}>{area.nome}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -122,7 +182,7 @@ function ProcessosPage() {
             </div>
           ) : isError ? (
             <div className="rounded-xl border border-destructive/30 bg-card p-10 text-center text-sm text-destructive">
-              Não foi possível carregar os processos do backend.
+              Nao foi possivel carregar os processos do backend.
             </div>
           ) : processos.length === 0 ? (
             <div className="rounded-xl border border-border bg-card p-10 text-center text-sm text-muted-foreground">
@@ -141,6 +201,62 @@ function ProcessosPage() {
           )}
         </main>
       </div>
+
+      <Dialog open={newOpen} onOpenChange={setNewOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogTitle>Novo Processo</DialogTitle>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Input
+              value={draft.titulo}
+              onChange={(event) => setDraft((current) => ({ ...current, titulo: event.target.value }))}
+              placeholder="Titulo"
+            />
+            <Select value={draft.areaId} onValueChange={(value) => setDraft((current) => ({ ...current, areaId: value }))}>
+              <SelectTrigger><SelectValue placeholder="Area" /></SelectTrigger>
+              <SelectContent>
+                {areas.map((area) => <SelectItem key={area.id} value={area.id}>{area.nome}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Input
+              value={draft.categoria}
+              onChange={(event) => setDraft((current) => ({ ...current, categoria: event.target.value }))}
+              placeholder="Categoria"
+            />
+            <Input
+              value={draft.tags}
+              onChange={(event) => setDraft((current) => ({ ...current, tags: event.target.value }))}
+              placeholder="Tags separadas por virgula"
+            />
+          </div>
+          <Textarea
+            value={draft.descricao}
+            onChange={(event) => setDraft((current) => ({ ...current, descricao: event.target.value }))}
+            placeholder="Descricao curta"
+            rows={3}
+          />
+          <Textarea
+            value={draft.conteudo}
+            onChange={(event) => setDraft((current) => ({ ...current, conteudo: event.target.value }))}
+            placeholder="Conteudo em markdown"
+            rows={8}
+          />
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={draft.publicado}
+              onChange={(event) => setDraft((current) => ({ ...current, publicado: event.target.checked }))}
+            />
+            Publicar imediatamente
+          </label>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={() => setNewOpen(false)}>Cancelar</Button>
+            <Button type="button" className="gap-2" disabled={createMutation.isPending} onClick={submitProcesso}>
+              {createMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              {createMutation.isPending ? "Salvando..." : "Salvar Processo"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -7,7 +7,7 @@ import type {
   Anexo,
   EventoHistorico,
   Comentario,
-} from "@/lib/mock-data";
+} from "@/lib/types";
 
 type AnyRecord = Record<string, unknown>;
 

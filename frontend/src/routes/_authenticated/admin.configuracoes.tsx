@@ -1,15 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { Edit, Loader2, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
-import { getAreas } from "@/lib/backend/areas";
+import { deleteArea, getAreas } from "@/lib/backend/areas";
 import { getProcessos } from "@/lib/backend/processos";
-import { getUsers } from "@/lib/backend/users";
+import { deleteUser, getUsers, updateUserRole } from "@/lib/backend/users";
 
 export const Route = createFileRoute("/_authenticated/admin/configuracoes")({
   head: () => ({ meta: [{ title: "Admin - Configuracoes - IntraHub" }] }),
@@ -17,12 +15,36 @@ export const Route = createFileRoute("/_authenticated/admin/configuracoes")({
 });
 
 function AdminConfiguracoesPage() {
-  const [saving, setSaving] = useState(false);
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const { data: usuarios = [], isLoading: loadingUsuarios } = useQuery({ queryKey: ["usuarios"], queryFn: getUsers });
   const { data: areas = [], isLoading: loadingAreas } = useQuery({ queryKey: ["areas"], queryFn: getAreas });
   const { data: processos = [] } = useQuery({ queryKey: ["processos"], queryFn: getProcessos });
   const categorias = Array.from(new Set(processos.map((processo) => processo.categoria).filter(Boolean)));
+  const deleteUserMutation = useMutation({
+    mutationFn: deleteUser,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["usuarios"] });
+      toast.success("Usuario desativado");
+    },
+    onError: () => toast.error("Nao foi possivel desativar o usuario"),
+  });
+  const deleteAreaMutation = useMutation({
+    mutationFn: deleteArea,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["areas"] });
+      toast.success("Area desativada");
+    },
+    onError: () => toast.error("Nao foi possivel desativar a area"),
+  });
+  const updateRoleMutation = useMutation({
+    mutationFn: ({ id, papel }: { id: string; papel: "ADMIN" | "GESTOR" | "COLABORADOR" }) => updateUserRole(id, papel),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["usuarios"] });
+      toast.success("Papel do usuario atualizado");
+    },
+    onError: () => toast.error("Nao foi possivel atualizar o papel"),
+  });
 
   if (user?.user_metadata?.role !== "admin") {
     return (
@@ -35,12 +57,11 @@ function AdminConfiguracoesPage() {
     );
   }
 
-  function action(label: string) {
-    setSaving(true);
-    window.setTimeout(() => {
-      setSaving(false);
-      toast.success(label, { description: "Dados principais ja estao vindo do backend." });
-    }, 500);
+  function editUserRole(id: string, currentRole: string) {
+    const next = window.prompt("Novo papel: ADMIN, GESTOR ou COLABORADOR", currentRole);
+    const papel = next?.trim().toUpperCase();
+    if (papel !== "ADMIN" && papel !== "GESTOR" && papel !== "COLABORADOR") return;
+    updateRoleMutation.mutate({ id, papel });
   }
 
   return (
@@ -61,10 +82,6 @@ function AdminConfiguracoesPage() {
         <TabsContent value="usuarios" className="rounded-xl border border-border bg-card p-5 shadow-soft">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-display text-lg font-semibold">Usuarios</h2>
-            <Button type="button" className="gap-2" onClick={() => action("Usuario criado")}>
-              <Plus className="h-4 w-4" />
-              Novo usuario
-            </Button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -83,8 +100,8 @@ function AdminConfiguracoesPage() {
                     <td className="py-3 text-muted-foreground">{usuario.email}</td>
                     <td className="py-3 text-muted-foreground">{usuario.cargo ?? usuario.papel}</td>
                     <td className="py-3 text-right">
-                      <Button type="button" variant="ghost" size="icon" aria-label="Editar usuario" onClick={() => action("Usuario atualizado")}><Edit className="h-4 w-4" /></Button>
-                      <Button type="button" variant="ghost" size="icon" aria-label="Excluir usuario" onClick={() => action("Usuario excluido")}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                      <Button type="button" variant="ghost" size="icon" aria-label="Editar usuario" onClick={() => editUserRole(usuario.id, usuario.papel)}><Edit className="h-4 w-4" /></Button>
+                      <Button type="button" variant="ghost" size="icon" aria-label="Excluir usuario" onClick={() => deleteUserMutation.mutate(usuario.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                     </td>
                   </tr>
                 ))}
@@ -104,7 +121,9 @@ function AdminConfiguracoesPage() {
             {!loadingAreas && areas.map((area) => (
               <div key={area.id} className="flex items-center justify-between rounded-lg border border-border p-3">
                 <span className="font-medium">{area.nome}</span>
-                <Button type="button" variant="outline" size="sm" onClick={() => action("Area atualizada")}>Editar</Button>
+                <div className="flex items-center gap-2">
+                  <Button type="button" variant="ghost" size="icon" aria-label="Excluir area" onClick={() => deleteAreaMutation.mutate(area.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                </div>
               </div>
             ))}
           </div>
@@ -113,7 +132,6 @@ function AdminConfiguracoesPage() {
         <TabsContent value="categorias" className="rounded-xl border border-border bg-card p-5 shadow-soft">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-display text-lg font-semibold">Categorias de demanda</h2>
-            <Button type="button" className="gap-2" onClick={() => action("Categoria criada")}><Plus className="h-4 w-4" /> Nova categoria</Button>
           </div>
           <div className="flex flex-wrap gap-2">
             {categorias.map((categoria) => <span key={categoria} className="rounded-md border border-border px-3 py-1 text-sm">{categoria}</span>)}
@@ -122,19 +140,10 @@ function AdminConfiguracoesPage() {
         </TabsContent>
 
         <TabsContent value="notificacoes" className="rounded-xl border border-border bg-card p-5 shadow-soft">
-          <h2 className="font-display text-lg font-semibold">Features do sistema</h2>
-          <div className="mt-5 space-y-4">
-            {["Notificacoes realtime", "Aprovacao de demandas", "Base de conhecimento publica"].map((feature) => (
-              <label key={feature} className="flex items-center justify-between rounded-lg border border-border p-3">
-                <span className="text-sm font-medium">{feature}</span>
-                <Switch defaultChecked />
-              </label>
-            ))}
-          </div>
-          <Button type="button" className="mt-5 gap-2" disabled={saving} onClick={() => action("Configuracoes salvas")}>
-            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            {saving ? "Salvando..." : "Salvar configuracoes"}
-          </Button>
+          <h2 className="font-display text-lg font-semibold">Notificacoes</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            As preferencias individuais ficam no perfil do usuario e ja sao persistidas pelo backend.
+          </p>
         </TabsContent>
       </Tabs>
     </div>

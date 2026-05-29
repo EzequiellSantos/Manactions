@@ -63,8 +63,8 @@ npx prisma db seed
 | `JWT_SECRET` | Secret para tokens internos do backend |
 | `JWT_EXPIRES_IN` | Expiração dos tokens internos (ex: `7d`) |
 | `RESEND_API_KEY` | API key do Resend para envio de e-mails |
-| `FRONTEND_URL` | URL do frontend (CORS), ex: `http://localhost:3000` |
-| `PORT` | Porta da API (padrão: `3001`) |
+| `FRONTEND_URL` | URL do frontend (CORS), ex: `http://localhost:8080` |
+| `PORT` | Porta da API (padrão: `3000`) |
 
 ## Desenvolvimento
 
@@ -81,9 +81,9 @@ npm run start:prod
 
 A API estará disponível em:
 
-- **Base:** `http://localhost:3001/api`
-- **Swagger:** `http://localhost:3001/api/docs`
-- **Health check:** `http://localhost:3001/api/health`
+- **Base:** `http://localhost:3000/api`
+- **Swagger:** `http://localhost:3000/api/docs`
+- **Health check:** `http://localhost:3000/api/health`
 
 ## Testes
 

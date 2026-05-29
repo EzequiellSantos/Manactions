@@ -192,24 +192,25 @@ export class DemandasService {
   async update(id: string, dto: UpdateDemandaDto, usuarioLogado: Usuario) {
     const demanda = await this.findById(id, usuarioLogado);
 
-    const podeEditar =
+    const podeEditarCompleto =
       usuarioLogado.papel === Papel.ADMIN ||
       (demanda.solicitanteId === usuarioLogado.id &&
         demanda.status === StatusDemanda.ABERTA);
+    const podeEditarPrazo = demanda.responsavelId === usuarioLogado.id;
 
-    if (!podeEditar) {
+    if (!podeEditarCompleto && !podeEditarPrazo) {
       throw new ForbiddenException(
-        'Somente o solicitante (com demanda aberta) ou admin pode editar',
+        'Somente o solicitante (com demanda aberta), responsÃ¡vel ou admin pode editar',
       );
     }
 
     return this.prisma.demanda.update({
       where: { id },
       data: {
-        ...(dto.titulo !== undefined && { titulo: dto.titulo }),
-        ...(dto.descricao !== undefined && { descricao: dto.descricao }),
-        ...(dto.prioridade !== undefined && { prioridade: dto.prioridade }),
-        ...(dto.tags !== undefined && { tags: dto.tags }),
+        ...(podeEditarCompleto && dto.titulo !== undefined && { titulo: dto.titulo }),
+        ...(podeEditarCompleto && dto.descricao !== undefined && { descricao: dto.descricao }),
+        ...(podeEditarCompleto && dto.prioridade !== undefined && { prioridade: dto.prioridade }),
+        ...(podeEditarCompleto && dto.tags !== undefined && { tags: dto.tags }),
         ...(dto.prazo !== undefined && { prazo: new Date(dto.prazo) }),
       },
       include: demandaDetailInclude,

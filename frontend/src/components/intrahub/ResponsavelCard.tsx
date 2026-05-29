@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Mail, MessageSquare, Send } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,11 +13,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { type Responsavel } from "@/lib/mock-data";
+import { type Responsavel } from "@/lib/types";
 
 const STATUS_MAP = {
   ativo: { label: "Ativo", cls: "bg-success/10 text-success border-success/20" },
-  ferias: { label: "Férias", cls: "bg-warning/10 text-warning border-warning/20" },
+  ferias: { label: "Ferias", cls: "bg-warning/10 text-warning border-warning/20" },
   remoto: { label: "Remoto", cls: "bg-primary/10 text-primary border-primary/20" },
 } satisfies Record<Responsavel["status"], { label: string; cls: string }>;
 
@@ -48,10 +47,14 @@ export function ResponsavelCard({ responsavel }: ResponsavelCardProps) {
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const subject = String(form.get("subject") ?? "");
+    const message = String(form.get("message") ?? "");
+    const mailto = new URL(`mailto:${responsavel.email}`);
+    mailto.searchParams.set("subject", subject);
+    mailto.searchParams.set("body", message);
+    window.location.href = mailto.toString();
     setOpen(false);
-    toast.success("Mensagem preparada", {
-      description: `O contato com ${responsavel.nome} será conectado ao backend depois.`,
-    });
   }
 
   return (
@@ -108,16 +111,16 @@ export function ResponsavelCard({ responsavel }: ResponsavelCardProps) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Mensagem para {responsavel.nome}</DialogTitle>
-            <DialogDescription>Envie uma solicitação rápida para o responsável da área.</DialogDescription>
+            <DialogDescription>Abra um e-mail preenchido para o responsavel da area.</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor={`subject-${responsavel.id}`}>Assunto</Label>
-              <Input id={`subject-${responsavel.id}`} required placeholder="Resumo do contato" />
+              <Input id={`subject-${responsavel.id}`} name="subject" required placeholder="Resumo do contato" />
             </div>
             <div className="space-y-2">
               <Label htmlFor={`message-${responsavel.id}`}>Mensagem</Label>
-              <Textarea id={`message-${responsavel.id}`} required rows={5} placeholder="Descreva o que você precisa" />
+              <Textarea id={`message-${responsavel.id}`} name="message" required rows={5} placeholder="Descreva o que voce precisa" />
             </div>
             <DialogFooter>
               <Button type="submit" className="gap-2">

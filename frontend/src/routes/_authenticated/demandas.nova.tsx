@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { Area, PrioridadeDemanda } from "@/lib/mock-data";
+import type { Area, PrioridadeDemanda } from "@/lib/types";
 import { getAreaIcon } from "@/lib/area-icons";
 import { getAreas } from "@/lib/backend/areas";
 import { createDemanda } from "@/lib/backend/demandas";
@@ -91,7 +91,7 @@ function NovaDemandaPage() {
         <h1 className="mt-6 font-display text-2xl font-bold">Demanda enviada</h1>
         <p className="mt-2 text-sm text-muted-foreground">Sua demanda foi registrada com o número #{successId}.</p>
         <Button asChild className="mt-6">
-          <Link to="/demandas/$id" params={{ id: "2491" }}>Ver Minha Demanda</Link>
+          <Link to="/demandas/$id" params={{ id: successId }}>Ver Minha Demanda</Link>
         </Button>
       </div>
     );
@@ -108,10 +108,10 @@ function NovaDemandaPage() {
     createMutation.mutate({
       areaId: areaSelecionada.id,
       titulo: values.titulo,
-      categoria: values.categoria,
       prioridade: values.prioridade,
       descricao: values.descricao,
       prazo: values.prazo || undefined,
+      tags: values.categoria ? [values.categoria] : undefined,
     });
   }
 

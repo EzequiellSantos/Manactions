@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, CalendarClock, FileText, Send, Tag, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { PrioridadeBadge } from "@/components/intrahub/PrioridadeBadge";
@@ -22,11 +22,18 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { getAreas } from "@/lib/backend/areas";
-import { addDemandaComment, getDemandaById } from "@/lib/backend/demandas";
+import {
+  addDemandaComment,
+  assumeDemanda,
+  getDemandaById,
+  updateDemanda,
+  updateDemandaStatus,
+} from "@/lib/backend/demandas";
 import { getUsers } from "@/lib/backend/users";
+import type { DemandaStatus } from "@/lib/types";
 
 export const Route = createFileRoute("/_authenticated/demandas/$id")({
-  head: () => ({ meta: [{ title: "Demanda — IntraHub" }] }),
+  head: () => ({ meta: [{ title: "Demanda - IntraHub" }] }),
   component: DemandaDetailPage,
 });
 
@@ -45,21 +52,73 @@ function initials(name?: string) {
   return name.split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("");
 }
 
+function nextStatus(status: DemandaStatus): DemandaStatus | null {
+  const map: Partial<Record<DemandaStatus, DemandaStatus>> = {
+    aberta: "em_analise",
+    em_analise: "em_andamento",
+    em_andamento: "concluida",
+  };
+  return map[status] ?? null;
+}
+
 function DemandaDetailPage() {
   const { id } = Route.useParams();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [comentario, setComentario] = useState("");
+
   const { data: demanda, isLoading, isError } = useQuery({
     queryKey: ["demandas", id],
     queryFn: () => getDemandaById(id),
   });
-  const { data: areas = [] } = useQuery({
-    queryKey: ["areas"],
-    queryFn: getAreas,
+  const { data: areas = [] } = useQuery({ queryKey: ["areas"], queryFn: getAreas });
+  const { data: usuarios = [] } = useQuery({ queryKey: ["usuarios"], queryFn: getUsers });
+
+  const refreshDemandas = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["demandas", id] }),
+      queryClient.invalidateQueries({ queryKey: ["demandas"] }),
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+      queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+    ]);
+  };
+
+  const assumeMutation = useMutation({
+    mutationFn: () => assumeDemanda(id),
+    onSuccess: async () => {
+      await refreshDemandas();
+      toast.success("Demanda assumida");
+    },
+    onError: () => toast.error("Nao foi possivel assumir a demanda"),
   });
-  const { data: usuarios = [] } = useQuery({
-    queryKey: ["usuarios"],
-    queryFn: getUsers,
+
+  const statusMutation = useMutation({
+    mutationFn: ({ status, comentario: motivo }: { status: DemandaStatus; comentario?: string }) =>
+      updateDemandaStatus(id, status, motivo),
+    onSuccess: async () => {
+      await refreshDemandas();
+      toast.success("Status atualizado");
+    },
+    onError: () => toast.error("Nao foi possivel atualizar o status"),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (payload: { titulo?: string; prazo?: string }) => updateDemanda(id, payload),
+    onSuccess: async () => {
+      await refreshDemandas();
+      toast.success("Demanda atualizada");
+    },
+    onError: () => toast.error("Nao foi possivel atualizar a demanda"),
+  });
+
+  const commentMutation = useMutation({
+    mutationFn: (texto: string) => addDemandaComment(id, texto),
+    onSuccess: async () => {
+      setComentario("");
+      await refreshDemandas();
+      toast.success("Comentario enviado");
+    },
+    onError: () => toast.error("Nao foi possivel enviar o comentario"),
   });
 
   if (isLoading) {
@@ -67,7 +126,7 @@ function DemandaDetailPage() {
   }
 
   if (isError || !demanda) {
-    return <div className="mx-auto w-full max-w-7xl rounded-xl border border-destructive/30 bg-card p-8 text-sm text-destructive">Não foi possível carregar esta demanda do backend.</div>;
+    return <div className="mx-auto w-full max-w-7xl rounded-xl border border-destructive/30 bg-card p-8 text-sm text-destructive">Nao foi possivel carregar esta demanda do backend.</div>;
   }
 
   const demandaAtual = demanda;
@@ -81,18 +140,33 @@ function DemandaDetailPage() {
     ...(area?.responsaveis ?? []).map((item) => [item.id, item.nome] as const),
   ]);
 
-  function action(label: string) {
-    toast.info(label, { description: "A ação será conectada ao backend na próxima etapa." });
+  function editTitle() {
+    const titulo = window.prompt("Novo titulo da demanda", demandaAtual.titulo);
+    if (!titulo || titulo.trim() === demandaAtual.titulo) return;
+    updateMutation.mutate({ titulo: titulo.trim() });
   }
 
-  async function sendComment() {
+  function addDeadline() {
+    const prazo = window.prompt("Informe o novo prazo no formato AAAA-MM-DD");
+    if (!prazo) return;
+    updateMutation.mutate({ prazo });
+  }
+
+  function advanceStatus() {
+    const status = nextStatus(demandaAtual.status);
+    if (!status) {
+      toast.info("Esta demanda nao possui proxima transicao disponivel.");
+      return;
+    }
+    statusMutation.mutate({ status });
+  }
+
+  function sendComment() {
     if (!comentario.trim()) return;
-    await addDemandaComment(demandaAtual.id, comentario);
-    setComentario("");
-    toast.success("Comentário pronto para envio", { description: "O backend persistirá essa mensagem depois." });
+    commentMutation.mutate(comentario.trim());
   }
 
-  function DestructiveAction({ label }: { label: string }) {
+  function DestructiveAction({ label, onConfirm }: { label: string; onConfirm: () => void }) {
     return (
       <AlertDialog>
         <AlertDialogTrigger asChild>
@@ -100,14 +174,14 @@ function DemandaDetailPage() {
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar ação</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar acao</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação altera o andamento da demanda. Você poderá auditar o evento no histórico.
+              Esta acao altera o andamento da demanda e sera registrada no historico.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Voltar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => action(label)}>{label}</AlertDialogAction>
+            <AlertDialogAction onClick={onConfirm}>{label}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -131,22 +205,26 @@ function DemandaDetailPage() {
             <PrioridadeBadge prioridade={demanda.prioridade} />
           </div>
           <h1 className="mt-3 font-display text-2xl font-bold tracking-tight">{demanda.titulo}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{area?.nome} · {demanda.categoria}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{area?.nome ?? demanda.areaId}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {isSolicitante && demanda.status === "aberta" && (
             <>
-              <Button type="button" variant="outline" onClick={() => action("Editar demanda")}>Editar</Button>
-              <DestructiveAction label="Cancelar" />
+              <Button type="button" variant="outline" disabled={updateMutation.isPending} onClick={editTitle}>Editar</Button>
+              <DestructiveAction label="Cancelar" onConfirm={() => statusMutation.mutate({ status: "cancelada", comentario: "Cancelada pelo solicitante" })} />
             </>
           )}
           {isResponsavel && (
             <>
-              <Button type="button" variant="outline" onClick={() => action("Assumir demanda")}>Assumir</Button>
-              <Button type="button" variant="outline" onClick={() => action("Alterar status")}>Alterar Status</Button>
-              <Button type="button" variant="outline" onClick={() => action("Adicionar prazo")}>Adicionar Prazo</Button>
-              <Button type="button" onClick={() => action("Resolver demanda")}>Resolver</Button>
-              <DestructiveAction label="Rejeitar" />
+              <Button type="button" variant="outline" disabled={assumeMutation.isPending} onClick={() => assumeMutation.mutate()}>Assumir</Button>
+              <Button type="button" variant="outline" disabled={statusMutation.isPending} onClick={advanceStatus}>Alterar Status</Button>
+              <Button type="button" variant="outline" disabled={updateMutation.isPending} onClick={addDeadline}>Adicionar Prazo</Button>
+              {demanda.status === "em_andamento" && (
+                <Button type="button" disabled={statusMutation.isPending} onClick={() => statusMutation.mutate({ status: "concluida" })}>Resolver</Button>
+              )}
+              {demanda.status === "em_analise" && (
+                <DestructiveAction label="Rejeitar" onConfirm={() => statusMutation.mutate({ status: "rejeitada", comentario: "Rejeitada pelo responsavel" })} />
+              )}
             </>
           )}
         </div>
@@ -155,7 +233,7 @@ function DemandaDetailPage() {
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
         <main className="space-y-6">
           <section className="rounded-xl border border-border bg-card p-6 shadow-soft">
-            <h2 className="font-display text-lg font-semibold">Descrição</h2>
+            <h2 className="font-display text-lg font-semibold">Descricao</h2>
             <p className="mt-3 whitespace-pre-line text-sm leading-6 text-muted-foreground">{demanda.descricao}</p>
           </section>
 
@@ -167,7 +245,7 @@ function DemandaDetailPage() {
                   <FileText className="h-5 w-5 text-primary" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{anexo.nome}</p>
-                    <p className="text-xs text-muted-foreground">{anexo.tipo} · {anexo.tamanho}</p>
+                    <p className="text-xs text-muted-foreground">{anexo.tipo} - {anexo.tamanho}</p>
                   </div>
                 </div>
               ))}
@@ -176,7 +254,7 @@ function DemandaDetailPage() {
           </section>
 
           <section className="rounded-xl border border-border bg-card p-6 shadow-soft">
-            <h2 className="font-display text-lg font-semibold">Histórico</h2>
+            <h2 className="font-display text-lg font-semibold">Historico</h2>
             <div className="mt-5">
               {demanda.historico.map((evento) => (
                 <TimelineEvento key={evento.id} evento={evento} autorNome={autores.get(evento.autorId)} />
@@ -185,30 +263,30 @@ function DemandaDetailPage() {
           </section>
 
           <section className="rounded-xl border border-border bg-card p-6 shadow-soft">
-            <h2 className="font-display text-lg font-semibold">Adicionar Comentário</h2>
-            <Textarea className="mt-4" rows={5} value={comentario} onChange={(event) => setComentario(event.target.value)} placeholder="Escreva uma atualização ou dúvida..." />
-            <Button type="button" className="mt-3 gap-2" onClick={sendComment}>
+            <h2 className="font-display text-lg font-semibold">Adicionar Comentario</h2>
+            <Textarea className="mt-4" rows={5} value={comentario} onChange={(event) => setComentario(event.target.value)} placeholder="Escreva uma atualizacao ou duvida..." />
+            <Button type="button" className="mt-3 gap-2" disabled={commentMutation.isPending} onClick={sendComment}>
               <Send className="h-4 w-4" />
-              Enviar comentário
+              {commentMutation.isPending ? "Enviando..." : "Enviar comentario"}
             </Button>
           </section>
         </main>
 
         <aside className="space-y-4">
           <section className="rounded-xl border border-border bg-card p-5 shadow-soft">
-            <h2 className="font-display text-base font-semibold">Informações da Demanda</h2>
+            <h2 className="font-display text-base font-semibold">Informacoes da Demanda</h2>
             <dl className="mt-4 space-y-3 text-sm">
-              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Área</dt><dd className="font-medium">{area?.nome}</dd></div>
-              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Categoria</dt><dd className="font-medium">{demanda.categoria}</dd></div>
-              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Criado por</dt><dd className="font-medium">{solicitante?.nome}</dd></div>
-              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Criação</dt><dd className="font-medium">{formatDate(demanda.criadaEm, true)}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Area</dt><dd className="font-medium">{area?.nome ?? demanda.areaId}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Categoria</dt><dd className="font-medium">{demanda.categoria || demanda.tags?.[0] || "-"}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Criado por</dt><dd className="font-medium">{solicitante?.nome ?? demanda.solicitanteId}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Criacao</dt><dd className="font-medium">{formatDate(demanda.criadaEm, true)}</dd></div>
               <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Prazo</dt><dd className="font-medium">{formatDate(demanda.prazo)}</dd></div>
-              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Atualização</dt><dd className="font-medium">{formatDate(demanda.atualizadaEm, true)}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Atualizacao</dt><dd className="font-medium">{formatDate(demanda.atualizadaEm, true)}</dd></div>
             </dl>
           </section>
 
           <section className="rounded-xl border border-border bg-card p-5 shadow-soft">
-            <h2 className="font-display text-base font-semibold">Responsável Atual</h2>
+            <h2 className="font-display text-base font-semibold">Responsavel Atual</h2>
             <div className="mt-4 flex items-center gap-3">
               <Avatar>
                 <AvatarFallback className="bg-primary/10 font-semibold text-primary">
@@ -216,11 +294,11 @@ function DemandaDetailPage() {
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0">
-                <p className="font-medium">{responsavel?.nome ?? "Sem responsável"}</p>
+                <p className="font-medium">{responsavel?.nome ?? "Sem responsavel"}</p>
                 <p className="text-xs text-muted-foreground">{responsavel?.cargo ?? "Aguardando triagem"}</p>
               </div>
             </div>
-            <Button type="button" variant="outline" className="mt-4 w-full gap-2" onClick={() => action("Reatribuir responsável")}>
+            <Button type="button" variant="outline" className="mt-4 w-full gap-2" disabled>
               <UserRound className="h-4 w-4" />
               Reatribuir
             </Button>
@@ -235,6 +313,7 @@ function DemandaDetailPage() {
                   {tag}
                 </span>
               ))}
+              {(demanda.tags ?? []).length === 0 && <span className="text-sm text-muted-foreground">Sem tags.</span>}
             </div>
           </section>
 
@@ -243,7 +322,7 @@ function DemandaDetailPage() {
               <CalendarClock className="h-4 w-4" />
               SLA
             </h2>
-            <p className="mt-3 text-sm text-muted-foreground">Prazos e regras de atendimento serão calculados pelo backend.</p>
+            <p className="mt-3 text-sm text-muted-foreground">Prazos e regras de atendimento serao calculados pelo backend.</p>
           </section>
         </aside>
       </div>

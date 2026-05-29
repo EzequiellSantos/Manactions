@@ -1,7 +1,8 @@
 import { useEffect, useMemo } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -25,7 +26,8 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { AREA_ICON_OPTIONS, getAreaIcon } from "@/lib/area-icons";
-import type { Area, CanalTipo } from "@/lib/mock-data";
+import type { Area, CanalTipo } from "@/lib/types";
+import { createArea } from "@/lib/backend/areas";
 
 const AREA_CATEGORIAS = ["Tecnologia", "Pessoas", "Administrativo", "Comunicacao", "Governanca", "Operacao", "Geral"];
 
@@ -64,6 +66,8 @@ function slugify(value: string) {
 }
 
 function NovaAreaPage() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const form = useForm<AreaFormValues>({
     resolver: zodResolver(areaSchema),
     defaultValues: {
@@ -86,6 +90,15 @@ function NovaAreaPage() {
   const nome = form.watch("nome");
   const values = form.watch();
   const IconPreview = getAreaIcon(values.icone);
+  const createMutation = useMutation({
+    mutationFn: createArea,
+    onSuccess: async (area) => {
+      await queryClient.invalidateQueries({ queryKey: ["areas"] });
+      toast.success("Area criada");
+      navigate({ to: "/areas/$slug", params: { slug: area.slug } });
+    },
+    onError: () => toast.error("Nao foi possivel criar a area"),
+  });
 
   useEffect(() => {
     const currentSlug = form.getValues("slug");
@@ -121,9 +134,24 @@ function NovaAreaPage() {
     };
   }, [values]);
 
-  function onSubmit(data: AreaFormValues) {
-    toast.success("Área validada", {
-      description: `${data.nome} será salva pelo backend quando a API estiver conectada.`,
+  function onSubmitConnected(data: AreaFormValues) {
+    createMutation.mutate({
+      nome: data.nome,
+      slug: data.slug,
+      descricao: data.descricao,
+      responsabilidades: data.responsabilidades
+        .split("\n")
+        .map((item) => item.trim())
+        .filter(Boolean),
+      categoria: data.categoria,
+      cor: data.cor,
+      icone: data.icone,
+      canaisContato: data.canaisContato.map((canal) => ({
+        tipo: canal.tipo,
+        label: canal.label,
+        valor: canal.valor,
+        link: canal.link || undefined,
+      })),
     });
   }
 
@@ -139,14 +167,14 @@ function NovaAreaPage() {
       <header>
         <h1 className="font-display text-2xl font-bold tracking-tight">Nova Área</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Cadastre a estrutura que depois será persistida pelo backend.
+          Cadastre a estrutura da area no backend.
         </p>
       </header>
 
       <div className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
         <div className="rounded-xl border border-border bg-card p-6 shadow-soft">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmitConnected)} className="space-y-6">
               <div className="grid gap-4 md:grid-cols-2">
                 <FormField
                   control={form.control}

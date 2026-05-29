@@ -1,6 +1,6 @@
 import { CheckCircle2, Circle, Clock3, PlayCircle, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { type DemandaStatus } from "@/lib/mock-data";
+import { type DemandaStatus } from "@/lib/types";
 
 const STATUS_MAP: Record<DemandaStatus, { label: string; cls: string; icon: typeof Circle }> = {
   aberta: {

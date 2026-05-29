@@ -1,5 +1,5 @@
 import { ExternalLink, Hash, Mail, MessageCircle, Phone, Users } from "lucide-react";
-import { type CanalContato as CanalContatoType } from "@/lib/mock-data";
+import { type CanalContato as CanalContatoType } from "@/lib/types";
 
 const CANAL_ICON = {
   email: Mail,

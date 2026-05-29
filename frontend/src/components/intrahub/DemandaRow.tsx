@@ -3,7 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { PrioridadeBadge } from "@/components/intrahub/PrioridadeBadge";
 import { StatusBadge } from "@/components/intrahub/StatusBadge";
-import type { Demanda, Responsavel } from "@/lib/mock-data";
+import type { Demanda, Responsavel } from "@/lib/types";
 
 function formatDate(date?: Date) {
   if (!date) return "-";

@@ -20,3 +20,14 @@ export interface BackendUserListItem {
 export async function getUsers(): Promise<BackendUserListItem[]> {
   return apiFetch<BackendUserListItem[]>("/usuarios");
 }
+
+export async function deleteUser(id: string): Promise<BackendUserListItem> {
+  return apiFetch<BackendUserListItem>(`/usuarios/${id}`, { method: "DELETE" });
+}
+
+export async function updateUserRole(id: string, papel: "ADMIN" | "GESTOR" | "COLABORADOR"): Promise<BackendUserListItem> {
+  return apiFetch<BackendUserListItem>(`/usuarios/${id}/papel`, {
+    method: "PATCH",
+    body: JSON.stringify({ papel }),
+  });
+}

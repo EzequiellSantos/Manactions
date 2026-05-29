@@ -12,7 +12,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Demanda, DemandaStatus, PrioridadeDemanda } from "@/lib/mock-data";
+import { useAuth } from "@/hooks/use-auth";
+import type { Demanda, DemandaStatus, PrioridadeDemanda } from "@/lib/types";
 import { getAreas } from "@/lib/backend/areas";
 import { getDemandas } from "@/lib/backend/demandas";
 
@@ -42,6 +43,7 @@ function toCsv(rows: Demanda[], areas: { id: string; nome: string }[]) {
 }
 
 function DemandasPage() {
+  const { user } = useAuth();
   const [tab, setTab] = useState("minhas");
   const [status, setStatus] = useState("todos");
   const [area, setArea] = useState("todas");
@@ -67,11 +69,14 @@ function DemandasPage() {
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         if (demanda.criadaEm < sevenDaysAgo) return false;
       }
-      if (tab === "minhas" && demanda.solicitanteId !== "user-1") return false;
-      if (tab === "area" && demanda.areaId !== "ti") return false;
+      if (tab === "minhas" && demanda.solicitanteId !== user?.id) return false;
+      if (tab === "area") {
+        const demandaArea = areas.find((item) => item.id === demanda.areaId);
+        if (!demandaArea?.responsaveis.some((responsavel) => responsavel.id === user?.id)) return false;
+      }
       return true;
     });
-  }, [area, demandas, periodo, prioridade, status, tab]);
+  }, [area, areas, demandas, periodo, prioridade, status, tab, user?.id]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
