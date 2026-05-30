@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, CalendarClock, Send, Tag, UserRound } from "lucide-react";
@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/intrahub/StatusBadge";
 import { TimelineEvento } from "@/components/intrahub/TimelineEvento";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   AlertDialog,
@@ -61,22 +62,17 @@ function initials(name?: string) {
   return name.split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("");
 }
 
-function nextStatus(status: DemandaStatus): DemandaStatus | null {
-  const map: Partial<Record<DemandaStatus, DemandaStatus>> = {
-    aberta: "em_analise",
-    em_analise: "em_andamento",
-    em_andamento: "concluida",
-  };
-  return map[status] ?? null;
-}
+const DEMANDA_STATUS_OPTIONS: DemandaStatus[] = ["aberta", "em_analise", "em_andamento", "concluida", "cancelada", "rejeitada"];
 
 function DemandaDetailPage() {
   const { id } = Route.useParams();
-  const { user, loading } = useAuth();
-  const { canReassignDemanda } = usePermissions();
+  const { loading } = useAuth();
+  const { currentUser, canManageDemanda, canReassignDemanda } = usePermissions();
   const queryClient = useQueryClient();
   const [comentario, setComentario] = useState("");
   const [selectedResponsavelId, setSelectedResponsavelId] = useState("");
+  const [statusDraft, setStatusDraft] = useState<DemandaStatus>("aberta");
+  const [prazoResolucaoDraft, setPrazoResolucaoDraft] = useState("");
 
   const { data: demanda, isLoading, isError } = useQuery({
     queryKey: ["demandas", id],
@@ -125,13 +121,19 @@ function DemandaDetailPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (payload: { titulo?: string; prazo?: string }) => updateDemanda(id, payload),
+    mutationFn: (payload: { titulo?: string; prazo?: string; prazoResolucao?: string }) => updateDemanda(id, payload),
     onSuccess: async () => {
       await refreshDemandas();
       toast.success("Demanda atualizada");
     },
     onError: () => toast.error("Nao foi possivel atualizar a demanda"),
   });
+
+  useEffect(() => {
+    if (!demanda) return;
+    setStatusDraft(demanda.status);
+    setPrazoResolucaoDraft(demanda.prazoResolucao ? demanda.prazoResolucao.toISOString().slice(0, 10) : "");
+  }, [demanda?.id, demanda?.prazoResolucao, demanda?.status]);
 
   const commentMutation = useMutation({
     mutationFn: (texto: string) => addDemandaComment(id, texto),
@@ -170,8 +172,12 @@ function DemandaDetailPage() {
       metadados: { comentarioId: comentario.id },
     })),
   ].sort((a, b) => a.criadoEm.getTime() - b.criadoEm.getTime());
-  const isSolicitante = demandaAtual.solicitanteId === user?.id;
-  const isResponsavel = demandaAtual.responsavelId === user?.id || area?.responsaveis.some((item) => item.id === user?.id);
+  const isSolicitante = demandaAtual.solicitanteId === currentUser?.id;
+  const isResponsavelAtual = demandaAtual.responsavelId === currentUser?.id;
+  const isResponsavelDaArea = area?.responsaveis.some((item) => item.id === currentUser?.id) ?? false;
+  const isResponsavel = isResponsavelAtual || isResponsavelDaArea;
+  const canAssumir = isResponsavelDaArea && !isResponsavelAtual;
+  const canManageAtendimento = canManageDemanda(demandaAtual);
   const canShowTriagem = canReassignDemanda(demandaAtual);
   const responsaveisDisponiveis = usuarios.filter((usuario) =>
     usuario.ativo &&
@@ -190,19 +196,17 @@ function DemandaDetailPage() {
     updateMutation.mutate({ titulo: titulo.trim() });
   }
 
-  function addDeadline() {
-    const prazo = window.prompt("Informe o novo prazo no formato AAAA-MM-DD");
-    if (!prazo) return;
-    updateMutation.mutate({ prazo });
-  }
-
-  function advanceStatus() {
-    const status = nextStatus(demandaAtual.status);
-    if (!status) {
-      toast.info("Esta demanda nao possui proxima transicao disponivel.");
-      return;
+  async function saveDemandControl() {
+    const updates: Promise<unknown>[] = [];
+    if (statusDraft !== demandaAtual.status) {
+      updates.push(statusMutation.mutateAsync({ status: statusDraft }));
     }
-    statusMutation.mutate({ status });
+    const currentPrazoResolucao = demandaAtual.prazoResolucao ? demandaAtual.prazoResolucao.toISOString().slice(0, 10) : "";
+    if (prazoResolucaoDraft !== currentPrazoResolucao && prazoResolucaoDraft) {
+      updates.push(updateMutation.mutateAsync({ prazoResolucao: prazoResolucaoDraft }));
+    }
+    if (updates.length === 0) return;
+    await Promise.all(updates);
   }
 
   function assignSelectedResponsavel() {
@@ -265,9 +269,9 @@ function DemandaDetailPage() {
           )}
           {isResponsavel && (
             <>
-              <Button type="button" variant="outline" disabled={assumeMutation.isPending} onClick={() => assumeMutation.mutate()}>Assumir</Button>
-              <Button type="button" variant="outline" disabled={statusMutation.isPending} onClick={advanceStatus}>Alterar Status</Button>
-              <Button type="button" variant="outline" disabled={updateMutation.isPending} onClick={addDeadline}>Adicionar Prazo</Button>
+              {canAssumir && (
+                <Button type="button" variant="outline" disabled={assumeMutation.isPending} onClick={() => assumeMutation.mutate()}>Assumir</Button>
+              )}
               {demanda.status === "em_andamento" && (
                 <Button type="button" disabled={statusMutation.isPending} onClick={() => statusMutation.mutate({ status: "concluida" })}>Resolver</Button>
               )}
@@ -314,7 +318,8 @@ function DemandaDetailPage() {
               <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Categoria</dt><dd className="font-medium">{demanda.categoria || demanda.tags?.[0] || "-"}</dd></div>
               <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Criado por</dt><dd className="font-medium">{solicitante?.nome ?? demanda.solicitanteId}</dd></div>
               <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Criacao</dt><dd className="font-medium">{formatDate(demanda.criadaEm, true)}</dd></div>
-              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Prazo</dt><dd className="font-medium">{formatDate(demanda.prazo)}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Prazo solicitado</dt><dd className="font-medium">{formatDate(demanda.prazo)}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Prazo resolucao</dt><dd className="font-medium">{formatDate(demanda.prazoResolucao)}</dd></div>
               <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Atualizacao</dt><dd className="font-medium">{formatDate(demanda.atualizadaEm, true)}</dd></div>
             </dl>
           </section>
@@ -371,6 +376,43 @@ function DemandaDetailPage() {
             )}
           </section>
 
+          {canManageAtendimento && (
+            <section className="rounded-xl border border-border bg-card p-5 shadow-soft">
+              <h2 className="font-display text-base font-semibold">Controle da Demanda</h2>
+              <div className="mt-4 space-y-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Status</label>
+                  <Select value={statusDraft} onValueChange={(value) => setStatusDraft(value as DemandaStatus)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DEMANDA_STATUS_OPTIONS.map((status) => (
+                        <SelectItem key={status} value={status}>{status.replace("_", " ")}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Prazo de resolucao</label>
+                  <Input
+                    type="date"
+                    value={prazoResolucaoDraft}
+                    onChange={(event) => setPrazoResolucaoDraft(event.target.value)}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  className="w-full"
+                  disabled={statusMutation.isPending || updateMutation.isPending}
+                  onClick={saveDemandControl}
+                >
+                  {statusMutation.isPending || updateMutation.isPending ? "Salvando..." : "Salvar Controle"}
+                </Button>
+              </div>
+            </section>
+          )}
+
           <section className="rounded-xl border border-border bg-card p-5 shadow-soft">
             <h2 className="font-display text-base font-semibold">Tags</h2>
             <div className="mt-4 flex flex-wrap gap-2">
@@ -387,9 +429,9 @@ function DemandaDetailPage() {
           <section className="rounded-xl border border-border bg-card p-5 shadow-soft">
             <h2 className="flex items-center gap-2 font-display text-base font-semibold">
               <CalendarClock className="h-4 w-4" />
-              SLA
+              Prazos
             </h2>
-            <p className="mt-3 text-sm text-muted-foreground">Prazos e regras de atendimento serao calculados pelo backend.</p>
+            <p className="mt-3 text-sm text-muted-foreground">O prazo solicitado vem de quem abriu a demanda. O prazo de resolucao e definido pelo responsavel durante o atendimento.</p>
           </section>
         </aside>
       </div>

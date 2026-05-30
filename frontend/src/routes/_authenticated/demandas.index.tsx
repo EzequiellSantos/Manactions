@@ -151,7 +151,7 @@ function DemandasPage() {
                 <th className="px-4 py-3 text-left font-semibold">Status</th>
                 <th className="px-4 py-3 text-left font-semibold">Responsável</th>
                 <th className="px-4 py-3 text-left font-semibold">Criada em</th>
-                <th className="px-4 py-3 text-left font-semibold">Prazo</th>
+                <th className="px-4 py-3 text-left font-semibold">Prazos</th>
                 <th className="px-4 py-3 text-right font-semibold">Ações</th>
               </tr>
             </thead>

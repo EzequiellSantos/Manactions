@@ -16,6 +16,7 @@ export interface UpdateDemandaPayload {
   prioridade?: PrioridadeDemanda;
   descricao?: string;
   prazo?: string;
+  prazoResolucao?: string;
   tags?: string[];
 }
 
@@ -52,6 +53,7 @@ function toUpdatePayload(payload: UpdateDemandaPayload) {
     descricao: payload.descricao,
     prioridade: payload.prioridade ? PRIORIDADE_API[payload.prioridade] : undefined,
     prazo: payload.prazo,
+    prazoResolucao: payload.prazoResolucao,
     tags: payload.tags,
   };
 }

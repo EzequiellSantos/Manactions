@@ -52,7 +52,12 @@ export function DemandaRow({ demanda, areaNome, responsavel: responsavelProp }: 
         </div>
       </td>
       <td className="px-4 py-3 align-middle text-xs text-muted-foreground">{formatDate(demanda.criadaEm)}</td>
-      <td className="px-4 py-3 align-middle text-xs text-muted-foreground">{formatDate(demanda.prazo)}</td>
+      <td className="px-4 py-3 align-middle text-xs text-muted-foreground">
+        <div className="space-y-0.5">
+          <p>Solicitado: {formatDate(demanda.prazo)}</p>
+          <p>Resolucao: {formatDate(demanda.prazoResolucao)}</p>
+        </div>
+      </td>
       <td className="px-4 py-3 align-middle text-right">
         <Link
           to="/demandas/$id"
