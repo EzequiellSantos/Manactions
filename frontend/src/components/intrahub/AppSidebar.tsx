@@ -1,7 +1,8 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Layers, ListChecks, ClipboardList, Search, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, Layers, ListChecks, ClipboardList, Settings, LogOut, ShieldCheck } from "lucide-react";
 import { Logo } from "@/components/intrahub/Logo";
 import { useAuth } from "@/hooks/use-auth";
+import { usePermissions } from "@/hooks/use-permissions";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -11,28 +12,37 @@ const NAV = [
   { to: "/areas", label: "Áreas", icon: Layers },
   { to: "/demandas", label: "Demandas", icon: ListChecks },
   { to: "/processos", label: "Processos", icon: ClipboardList },
-  { to: "/busca", label: "Busca", icon: Search },
   { to: "/configuracoes", label: "Configurações", icon: Settings },
 ] as const;
 
-export function AppSidebar() {
+const ADMIN_NAV = { to: "/admin/configuracoes", label: "Admin", icon: ShieldCheck } as const;
+
+interface AppSidebarProps {
+  variant?: "desktop" | "mobile";
+  onNavigate?: () => void;
+}
+
+export function AppSidebar({ variant = "desktop", onNavigate }: AppSidebarProps) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { displayName, initials, user, signOut } = useAuth();
+  const { isAdmin } = usePermissions();
+  const navItems = isAdmin ? [...NAV, ADMIN_NAV] : NAV;
 
-  return (
-    <aside className="hidden w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar md:flex">
+  const content = (
+    <>
       <div className="flex h-16 items-center border-b border-sidebar-border px-5">
         <Logo />
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-        {NAV.map((item) => {
+        {navItems.map((item) => {
           const active = pathname === item.to || pathname.startsWith(item.to + "/");
           const Icon = item.icon;
           return (
             <Link
               key={item.to}
               to={item.to}
+              onClick={onNavigate}
               className={cn(
                 "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
                 active
@@ -69,6 +79,16 @@ export function AppSidebar() {
           </Button>
         </div>
       </div>
+    </>
+  );
+
+  if (variant === "mobile") {
+    return <div className="flex h-full flex-col bg-sidebar">{content}</div>;
+  }
+
+  return (
+    <aside className="hidden w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar md:flex">
+      {content}
     </aside>
   );
 }

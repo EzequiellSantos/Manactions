@@ -34,6 +34,7 @@ function normalizeNotification(item: BackendNotification): AppNotification {
     description: item.mensagem,
     read: item.lida,
     type: normalizeType(item.tipo),
+    link: item.link,
     createdAt,
     time: relativeNotificationTime(createdAt),
   };

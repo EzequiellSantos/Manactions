@@ -35,12 +35,23 @@ function withAlpha(hexColor: string, alpha: number) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+function shortId(id: string) {
+  return id.slice(-5).toUpperCase();
+}
+
 const STAT_CARDS = [
   { key: "totalAreas", label: "Áreas cadastradas", icon: Layers, accent: "text-primary bg-primary/10" },
   { key: "minhasDemandasAbertas", label: "Minhas demandas abertas", icon: ListChecks, accent: "text-secondary bg-secondary/10" },
-  { key: "pendentesAprovacao", label: "Pendentes de aprovação", icon: ClockAlert, accent: "text-warning bg-warning/10" },
-  { key: "processosRecentes", label: "Processos acessados", icon: ClipboardList, accent: "text-success bg-success/10" },
+  { key: "pendentesAprovacao", label: "Demandas em análise", icon: ClockAlert, accent: "text-warning bg-warning/10" },
+  { key: "processosRecentes", label: "Processos cadastrados", icon: ClipboardList, accent: "text-success bg-success/10" },
 ] as const;
+
+const STAT_CARD_LINKS: Record<(typeof STAT_CARDS)[number]["key"], "/areas" | "/demandas" | "/processos"> = {
+  totalAreas: "/areas",
+  minhasDemandasAbertas: "/demandas",
+  pendentesAprovacao: "/demandas",
+  processosRecentes: "/processos",
+};
 
 function DashboardPage() {
   const { displayName, loading } = useAuth();
@@ -85,16 +96,20 @@ function DashboardPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: i * 0.05 }}
-              className="group rounded-xl border border-border bg-card p-5 shadow-soft transition hover:shadow-elevated"
             >
-              <div className="flex items-start justify-between">
-                <div className={cn("flex h-10 w-10 items-center justify-center rounded-lg", c.accent)}>
-                  <Icon className="h-5 w-5" />
+              <Link
+                to={STAT_CARD_LINKS[c.key]}
+                className="group block rounded-xl border border-border bg-card p-5 shadow-soft transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-elevated"
+              >
+                <div className="flex items-start justify-between">
+                  <div className={cn("flex h-10 w-10 items-center justify-center rounded-lg", c.accent)}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
                 </div>
-                <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
-              </div>
-              <p className="mt-4 font-display text-3xl font-bold tracking-tight">{value}</p>
-              <p className="mt-1 text-xs font-medium text-muted-foreground">{c.label}</p>
+                <p className="mt-4 font-display text-3xl font-bold tracking-tight">{value}</p>
+                <p className="mt-1 text-xs font-medium text-muted-foreground">{c.label}</p>
+              </Link>
             </motion.div>
           );
         })}
@@ -158,7 +173,36 @@ function DashboardPage() {
             </Link>
           </div>
           <div className="overflow-hidden rounded-xl border border-border bg-card shadow-soft">
-            <table className="w-full text-sm">
+            <div className="space-y-3 p-3 md:hidden">
+              {demandasRecentes.slice(0, 5).map((d) => {
+                const areaNome = areas.find((area) => area.id === d.areaId)?.nome ?? d.areaId;
+                return (
+                  <Link
+                    key={d.id}
+                    to="/demandas/$id"
+                    params={{ id: d.id }}
+                    className="block rounded-lg border border-border bg-background p-4 transition hover:border-primary/30 hover:bg-accent/50"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="line-clamp-2 font-medium text-foreground">{d.titulo}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">#{shortId(d.id)} · {areaNome}</p>
+                      </div>
+                      <StatusBadge status={d.status} />
+                    </div>
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      Atualizada em {new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" }).format(d.atualizadaEm)}
+                    </p>
+                  </Link>
+                );
+              })}
+              {demandasRecentes.length === 0 && (
+                <p className="px-1 py-6 text-sm text-muted-foreground">
+                  Nenhuma demanda recente encontrada
+                </p>
+              )}
+            </div>
+            <table className="hidden w-full text-sm md:table">
               <thead className="bg-surface text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="px-4 py-3 text-left font-semibold">Demanda</th>
@@ -168,13 +212,17 @@ function DashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {demandasRecentes.slice(0, 5).map((d) => (
+                {demandasRecentes.slice(0, 5).map((d) => {
+                  const areaNome = areas.find((area) => area.id === d.areaId)?.nome ?? d.areaId;
+                  return (
                   <tr key={d.id} className="transition hover:bg-accent/50">
                     <td className="px-4 py-3">
-                      <p className="font-medium text-foreground">{d.titulo}</p>
-                      <p className="text-xs text-muted-foreground">#{d.id}</p>
+                      <Link to="/demandas/$id" params={{ id: d.id }} className="font-medium text-foreground hover:text-primary">
+                        {d.titulo}
+                      </Link>
+                      <p className="text-xs text-muted-foreground">#{shortId(d.id)}</p>
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground">{areas.find((area) => area.id === d.areaId)?.nome ?? d.areaId}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{areaNome}</td>
                     <td className="px-4 py-3">
                       <StatusBadge status={d.status} />
                     </td>
@@ -182,11 +230,12 @@ function DashboardPage() {
                       {new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" }).format(d.atualizadaEm)}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
                 {demandasRecentes.length === 0 && (
                   <tr>
                     <td className="px-4 py-6 text-sm text-muted-foreground" colSpan={4}>
-                      Nenhuma demanda recente retornada pelo backend.
+                      Nenhuma demanda recente encontrada
                     </td>
                   </tr>
                 )}
@@ -228,7 +277,7 @@ function DashboardPage() {
             ))}
             {comunicados.length === 0 && (
               <article className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground shadow-soft">
-                Nenhum comunicado retornado pelo backend.
+                Nenhum comunicado encontrado.
               </article>
             )}
           </div>

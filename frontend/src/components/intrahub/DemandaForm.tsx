@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CalendarIcon, Loader2, Paperclip, Send } from "lucide-react";
+import { CalendarIcon, Loader2, Send } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -24,13 +24,14 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { createDemanda } from "@/lib/backend/demandas";
+import { getDemandaCategoryOptions } from "@/lib/demanda-categories";
 
 const demandaSchema = z.object({
   titulo: z.string().min(4, "Informe um título com pelo menos 4 caracteres."),
+  categoria: z.string().min(2, "Selecione uma categoria."),
   descricao: z.string().min(12, "Descreva a demanda com mais detalhes."),
   prioridade: z.enum(["baixa", "media", "alta", "urgente"]),
   prazo: z.string().optional(),
-  anexos: z.instanceof(FileList).optional(),
 });
 
 type DemandaFormValues = z.infer<typeof demandaSchema>;
@@ -46,12 +47,14 @@ export function DemandaForm({ areaId, areaNome }: DemandaFormProps) {
     resolver: zodResolver(demandaSchema),
     defaultValues: {
       titulo: "",
+      categoria: "",
       descricao: "",
       prioridade: "media",
       prazo: "",
     },
   });
   const { loading } = useAuth();
+  const categoriaOptions = getDemandaCategoryOptions({ nome: areaNome ?? "", slug: "", categoria: "" });
   const createMutation = useMutation({
     mutationFn: createDemanda,
     onSuccess: async (demanda) => {
@@ -61,7 +64,7 @@ export function DemandaForm({ areaId, areaNome }: DemandaFormProps) {
         queryClient.invalidateQueries({ queryKey: ["areas"] }),
       ]);
       toast.success("Demanda enviada", { description: `Demanda #${demanda.id} criada.` });
-      form.reset({ titulo: "", descricao: "", prioridade: "media", prazo: "" });
+      form.reset({ titulo: "", categoria: "", descricao: "", prioridade: "media", prazo: "" });
     },
     onError: () => toast.error("Nao foi possivel enviar a demanda"),
   });
@@ -74,6 +77,7 @@ export function DemandaForm({ areaId, areaNome }: DemandaFormProps) {
       descricao: values.descricao,
       prioridade: values.prioridade,
       prazo: values.prazo || undefined,
+      tags: [values.categoria],
     });
   }
 
@@ -113,7 +117,32 @@ export function DemandaForm({ areaId, areaNome }: DemandaFormProps) {
           )}
         />
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-3">
+          <FormField
+            control={form.control}
+            name="categoria"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Categoria</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {categoriaOptions.map((categoria) => (
+                      <SelectItem key={categoria} value={categoria}>
+                        {categoria}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           <FormField
             control={form.control}
             name="prioridade"
@@ -155,29 +184,6 @@ export function DemandaForm({ areaId, areaNome }: DemandaFormProps) {
             )}
           />
         </div>
-
-        <FormField
-          control={form.control}
-          name="anexos"
-          render={({ field: { onChange, value: _value, ...field } }) => (
-            <FormItem>
-              <FormLabel>Anexos</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <Paperclip className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="file"
-                    multiple
-                    className="pl-9"
-                    onChange={(event) => onChange(event.target.files ?? undefined)}
-                    {...field}
-                  />
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
 
         <Button type="submit" className="gap-2" disabled={createMutation.isPending || loading}>
           {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}

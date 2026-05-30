@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -20,6 +21,7 @@ import {
 import { NotificacoesService } from '../notificacoes/notificacoes.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AlterarStatusDto } from './dto/alterar-status.dto';
+import { AtribuirDemandaDto } from './dto/atribuir-demanda.dto';
 import { CreateComentarioDto } from './dto/create-comentario.dto';
 import { CreateDemandaDto } from './dto/create-demanda.dto';
 import { FiltroDemandasDto } from './dto/filtro-demandas.dto';
@@ -113,7 +115,7 @@ export class DemandasService {
       where: { id: dto.areaId, ativo: true },
       include: {
         responsaveis: {
-          where: { ativo: true },
+          where: { ativo: true, recebeDemandas: true },
           select: {
             id: true,
             nome: true,
@@ -196,11 +198,15 @@ export class DemandasService {
       usuarioLogado.papel === Papel.ADMIN ||
       (demanda.solicitanteId === usuarioLogado.id &&
         demanda.status === StatusDemanda.ABERTA);
-    const podeEditarPrazo = demanda.responsavelId === usuarioLogado.id;
+    const podeGerirAtendimento =
+      demanda.responsavelId === usuarioLogado.id ||
+      usuarioLogado.papel === Papel.ADMIN ||
+      (usuarioLogado.papel === Papel.GESTOR &&
+        usuarioLogado.areaId === demanda.areaId);
 
-    if (!podeEditarCompleto && !podeEditarPrazo) {
+    if (!podeEditarCompleto && !podeGerirAtendimento) {
       throw new ForbiddenException(
-        'Somente o solicitante (com demanda aberta), responsÃ¡vel ou admin pode editar',
+        'Somente o solicitante (com demanda aberta), responsável ou admin pode editar',
       );
     }
 
@@ -211,7 +217,8 @@ export class DemandasService {
         ...(podeEditarCompleto && dto.descricao !== undefined && { descricao: dto.descricao }),
         ...(podeEditarCompleto && dto.prioridade !== undefined && { prioridade: dto.prioridade }),
         ...(podeEditarCompleto && dto.tags !== undefined && { tags: dto.tags }),
-        ...(dto.prazo !== undefined && { prazo: new Date(dto.prazo) }),
+        ...(podeEditarCompleto && dto.prazo !== undefined && { prazo: new Date(dto.prazo) }),
+        ...(podeGerirAtendimento && dto.prazoResolucao !== undefined && { prazoResolucao: new Date(dto.prazoResolucao) }),
       },
       include: demandaDetailInclude,
     });
@@ -268,6 +275,17 @@ export class DemandasService {
   async assumirDemanda(id: string, usuarioLogado: Usuario) {
     const demanda = await this.findById(id, usuarioLogado);
 
+    const podeAssumir =
+      usuarioLogado.papel === Papel.ADMIN ||
+      demanda.solicitanteId === usuarioLogado.id ||
+      usuarioLogado.recebeDemandas === true;
+
+    if (!podeAssumir) {
+      throw new ForbiddenException(
+        'Você não está habilitado para assumir demandas. Contate o administrador.',
+      );
+    }
+
     if (demanda.responsavelId === usuarioLogado.id) {
       return demanda;
     }
@@ -321,6 +339,99 @@ export class DemandasService {
           );
         }
       }
+    }
+
+    return updated;
+  }
+
+  async atribuirDemanda(
+    id: string,
+    dto: AtribuirDemandaDto,
+    usuarioLogado: Usuario,
+  ) {
+    const demanda = await this.findById(id, usuarioLogado);
+
+    const podeAtribuir =
+      usuarioLogado.papel === Papel.ADMIN ||
+      (usuarioLogado.papel === Papel.GESTOR &&
+        usuarioLogado.areaId === demanda.areaId);
+
+    if (!podeAtribuir) {
+      throw new ForbiddenException(
+        'Somente gestores da area ou administradores podem atribuir demandas',
+      );
+    }
+
+    const responsavel = await this.prisma.usuario.findUnique({
+      where: { id: dto.responsavelId },
+    });
+
+    if (!responsavel || !responsavel.ativo) {
+      throw new NotFoundException('Responsavel nao encontrado');
+    }
+
+    if (!responsavel.recebeDemandas) {
+      throw new BadRequestException(
+        'Este usuario nao esta habilitado para receber demandas',
+      );
+    }
+
+    if (responsavel.areaId !== demanda.areaId) {
+      throw new BadRequestException(
+        'O responsavel precisa pertencer a mesma area da demanda',
+      );
+    }
+
+    if (demanda.responsavelId === responsavel.id) {
+      return demanda;
+    }
+
+    const responsavelAnteriorId = demanda.responsavelId;
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.demanda.update({
+        where: { id },
+        data: { responsavelId: responsavel.id },
+        include: demandaDetailInclude,
+      });
+
+      await tx.historicoEvento.create({
+        data: {
+          tipo: 'DEMANDA_ATRIBUIDA',
+          descricao: `${usuarioLogado.nome} atribuiu a demanda para ${responsavel.nome}`,
+          demandaId: id,
+          autorId: usuarioLogado.id,
+          metadados: {
+            responsavelAnteriorId,
+            responsavelNovoId: responsavel.id,
+          },
+        },
+      });
+
+      return result;
+    });
+
+    const link = this.notificacoesService.buildDemandaLink(id);
+
+    if (responsavel.notificacoesInApp) {
+      await this.notificacoesService.criarNotificacao(
+        responsavel.id,
+        'nova_atribuicao',
+        'Nova demanda atribuida',
+        `${usuarioLogado.nome} atribuiu a demanda "${demanda.titulo}" para voce.`,
+        link,
+      );
+    }
+
+    if (responsavel.notificacoesEmail) {
+      await this.notificacoesService.enviarEmailTemplate(
+        responsavel.email,
+        'nova_atribuicao',
+        {
+          demandaTitulo: demanda.titulo,
+          autor: usuarioLogado.nome,
+          link,
+        },
+      );
     }
 
     return updated;
@@ -519,18 +630,29 @@ export class DemandasService {
     autor: Usuario,
     conteudo: string,
   ) {
-    const participanteIds = new Set<string>([demanda.solicitanteId]);
-    if (demanda.responsavelId) {
+    const participanteIds = new Set<string>();
+
+    if (demanda.solicitanteId !== autor.id) {
+      participanteIds.add(demanda.solicitanteId);
+    }
+
+    if (demanda.responsavelId && demanda.responsavelId !== autor.id) {
       participanteIds.add(demanda.responsavelId);
     }
-    participanteIds.delete(autor.id);
 
     if (participanteIds.size === 0) {
       return;
     }
 
     const participantes = await this.prisma.usuario.findMany({
-      where: { id: { in: [...participanteIds] }, ativo: true },
+      where: {
+        id: { in: [...participanteIds] },
+        ativo: true,
+        OR: [
+          { id: demanda.solicitanteId },
+          { recebeDemandas: true },
+        ],
+      },
     });
 
     const link = this.notificacoesService.buildDemandaLink(demanda.id);

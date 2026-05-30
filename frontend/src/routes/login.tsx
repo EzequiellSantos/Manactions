@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { createFileRoute, useNavigate, useSearch, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -109,13 +109,13 @@ function LoginPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="password">Senha</Label>
-                    <Link
+                   {/*  <Link
                       to="/login"
                       search={{ redirect: search.redirect ?? "/dashboard" }}
                       className="text-xs font-medium text-primary hover:underline"
                     >
                       Esqueci minha senha
-                    </Link>
+                    </Link> */}
                   </div>
                   <Input
                     id="password"
@@ -135,19 +135,20 @@ function LoginPage() {
                   <div className="absolute inset-0 flex items-center">
                     <span className="w-full border-t border-border" />
                   </div>
+                  {/*
                   <div className="relative flex justify-center text-xs">
                     <span className="bg-card px-2 text-muted-foreground">ou</span>
-                  </div>
+                  </div>*/}
                 </div>
 
-                <Button
+                {/*<Button
                   type="button"
                   variant="outline"
                   className="w-full gap-2"
                   onClick={() => toast.info("SSO em breve", { description: "Integração com o provedor corporativo está em configuração." })}
                 >
                   <KeyRound className="h-4 w-4" /> Entrar com SSO
-                </Button>
+                </Button>*/}
               </form>
             </TabsContent>
 

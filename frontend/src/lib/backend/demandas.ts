@@ -16,6 +16,7 @@ export interface UpdateDemandaPayload {
   prioridade?: PrioridadeDemanda;
   descricao?: string;
   prazo?: string;
+  prazoResolucao?: string;
   tags?: string[];
 }
 
@@ -52,6 +53,7 @@ function toUpdatePayload(payload: UpdateDemandaPayload) {
     descricao: payload.descricao,
     prioridade: payload.prioridade ? PRIORIDADE_API[payload.prioridade] : undefined,
     prazo: payload.prazo,
+    prazoResolucao: payload.prazoResolucao,
     tags: payload.tags,
   };
 }
@@ -90,6 +92,13 @@ export async function updateDemandaStatus(id: string, status: DemandaStatus, com
 export async function assumeDemanda(id: string): Promise<Demanda> {
   return normalizeDemanda(await apiFetch<unknown>(`/demandas/${id}/assumir`, {
     method: "POST",
+  }));
+}
+
+export async function assignDemanda(id: string, responsavelId: string): Promise<Demanda> {
+  return normalizeDemanda(await apiFetch<unknown>(`/demandas/${id}/atribuir`, {
+    method: "PATCH",
+    body: JSON.stringify({ responsavelId }),
   }));
 }
 

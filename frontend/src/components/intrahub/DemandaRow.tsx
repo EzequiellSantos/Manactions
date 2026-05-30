@@ -20,6 +20,10 @@ function initials(name?: string) {
     .join("");
 }
 
+function shortId(id: string) {
+  return id.slice(-5).toUpperCase();
+}
+
 interface DemandaRowProps {
   demanda: Demanda;
   areaNome?: string;
@@ -31,8 +35,8 @@ export function DemandaRow({ demanda, areaNome, responsavel: responsavelProp }: 
 
   return (
     <tr className="group transition hover:bg-accent/50">
-      <td className="px-4 py-3 align-middle font-medium">#{demanda.id}</td>
-      <td className="px-4 py-3 align-middle">
+      <td className="w-16 px-3 py-3 align-middle font-mono text-[11px] font-medium text-muted-foreground">#{shortId(demanda.id)}</td>
+      <td className="min-w-[280px] px-4 py-3 align-middle">
         <Link to="/demandas/$id" params={{ id: demanda.id }} className="font-medium text-foreground hover:text-primary">
           {demanda.titulo}
         </Link>
@@ -52,7 +56,12 @@ export function DemandaRow({ demanda, areaNome, responsavel: responsavelProp }: 
         </div>
       </td>
       <td className="px-4 py-3 align-middle text-xs text-muted-foreground">{formatDate(demanda.criadaEm)}</td>
-      <td className="px-4 py-3 align-middle text-xs text-muted-foreground">{formatDate(demanda.prazo)}</td>
+      <td className="px-4 py-3 align-middle text-xs text-muted-foreground">
+        <div className="space-y-0.5">
+          <p>Solicitado: {formatDate(demanda.prazo)}</p>
+          <p>Resolucao: {formatDate(demanda.prazoResolucao)}</p>
+        </div>
+      </td>
       <td className="px-4 py-3 align-middle text-right">
         <Link
           to="/demandas/$id"

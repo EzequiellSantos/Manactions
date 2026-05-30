@@ -8,8 +8,16 @@ export interface UserProfile {
   departamento?: string;
   telefone?: string;
   avatarUrl?: string;
+  papel?: "ADMIN" | "GESTOR" | "COLABORADOR";
+  areaId?: string;
+  recebeDemandas?: boolean;
   notificacoesEmail?: boolean;
   notificacoesInApp?: boolean;
+  area?: {
+    id: string;
+    nome: string;
+    slug?: string;
+  };
 }
 
 export interface UpdateProfilePayload {

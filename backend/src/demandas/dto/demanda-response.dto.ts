@@ -48,6 +48,9 @@ export class DemandaListItemDto {
   @ApiPropertyOptional()
   prazo?: Date;
 
+  @ApiPropertyOptional()
+  prazoResolucao?: Date;
+
   @ApiProperty()
   criadoEm: Date;
 

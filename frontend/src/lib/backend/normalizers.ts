@@ -176,6 +176,7 @@ export function normalizeDemanda(input: unknown): Demanda {
     solicitanteId: str(item.solicitanteId ?? item.solicitante_id ?? item.requesterId ?? item.requester_id ?? solicitante.id),
     responsavelId: str(item.responsavelId ?? item.responsavel_id ?? item.assigneeId ?? item.assignee_id ?? responsavel.id, undefined as unknown as string),
     prazo: optionalDate(item.prazo ?? item.deadline),
+    prazoResolucao: optionalDate(item.prazoResolucao ?? item.prazo_resolucao ?? item.resolutionDeadline ?? item.resolution_deadline),
     criadaEm: date(item.criadaEm ?? item.criada_em ?? item.createdAt ?? item.created_at),
     atualizadaEm: date(item.atualizadaEm ?? item.atualizada_em ?? item.updatedAt ?? item.updated_at),
     tags: arr<string>(item.tags),

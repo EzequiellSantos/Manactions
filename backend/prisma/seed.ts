@@ -136,6 +136,7 @@ async function main() {
         cargo: 'Gestor de Área',
         departamento: areaData.nome,
         papel: Papel.GESTOR,
+        recebeDemandas: true,
       },
     });
 
@@ -165,25 +166,43 @@ async function main() {
 
   const processosTemplates = [
     { titulo: 'Solicitação de Férias', categoria: 'RH', tags: ['rh', 'férias'] },
-    { titulo: 'Reembolso de Despesas', categoria: 'Financeiro', tags: ['financeiro'] },
-    { titulo: 'Abertura de Chamado TI', categoria: 'TI', tags: ['ti', 'suporte'] },
+    { titulo: 'Reembolso de Despesas', categoria: 'Financeiro', areaSlug: 'financeiro', tags: ['financeiro'] },
+    { titulo: 'Abertura de Chamado TI', categoria: 'TI', areaSlug: 'tecnologia-da-informacao', tags: ['ti', 'suporte'] },
     { titulo: 'Solicitação de Material de Escritório', categoria: 'Facilities', tags: ['facilities'] },
     { titulo: 'Aprovação de Contrato', categoria: 'Jurídico', tags: ['jurídico'] },
-    { titulo: 'Briefing de Campanha', categoria: 'Marketing', tags: ['marketing'] },
-    { titulo: 'Onboarding de Colaborador', categoria: 'RH', tags: ['rh', 'onboarding'] },
-    { titulo: 'Reset de Senha', categoria: 'TI', tags: ['ti', 'acesso'] },
+    { titulo: 'Briefing de Campanha', categoria: 'Marketing', areaSlug: 'marketing', tags: ['marketing'] },
+    { titulo: 'Onboarding de Colaborador', categoria: 'RH', areaSlug: 'recursos-humanos', tags: ['rh', 'onboarding'] },
+    { titulo: 'Reset de Senha', categoria: 'TI', areaSlug: 'tecnologia-da-informacao', tags: ['ti', 'acesso'] },
     { titulo: 'Reserva de Sala de Reunião', categoria: 'Facilities', tags: ['facilities'] },
     { titulo: 'Comunicado Interno', categoria: 'Marketing', tags: ['comunicação'] },
-  ];
+  ] satisfies Array<{ titulo: string; categoria: string; areaSlug?: string; tags: string[] }>;
+
+  const areaSlugByProcessoCategoria: Record<string, string> = {
+    RH: 'recursos-humanos',
+    Financeiro: 'financeiro',
+    TI: 'tecnologia-da-informacao',
+    Facilities: 'facilities',
+    Marketing: 'marketing',
+  };
 
   for (let i = 0; i < processosTemplates.length; i++) {
     const template = processosTemplates[i];
-    const { area } = areasCriadas[i % areasCriadas.length];
+    const areaSlug =
+      template.areaSlug ??
+      (template.categoria.includes('Jur') ? 'juridico' : areaSlugByProcessoCategoria[template.categoria]);
+    const area = areasCriadas.find((item) => item.area.slug === areaSlug)?.area;
+    if (!area) {
+      throw new Error(`Area "${areaSlug}" nao encontrada para o processo "${template.titulo}"`);
+    }
     const slug = `${slugify(template.titulo)}-${i + 1}`;
 
     await prisma.processo.upsert({
       where: { slug },
-      update: {},
+      update: {
+        areaId: area.id,
+        categoria: template.categoria,
+        tags: template.tags,
+      },
       create: {
         titulo: template.titulo,
         slug,

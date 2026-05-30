@@ -22,6 +22,7 @@ import {
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
+import { usePermissions } from "@/hooks/use-permissions";
 import { getAreas } from "@/lib/backend/areas";
 import { createProcesso, getProcessoCategorias, getProcessos } from "@/lib/backend/processos";
 
@@ -45,10 +46,10 @@ function ProcessosPage() {
     tags: "",
     publicado: true,
   });
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
+  const { areaId: currentAreaId, isAdmin, isGestor } = usePermissions();
   const queryClient = useQueryClient();
-  const role = user?.user_metadata?.role;
-  const canManage = role === "admin" || role === "gestor";
+  const canManage = isAdmin || isGestor;
 
   const { data: allProcessos = [], isLoading, isError } = useQuery({
     queryKey: ["processos"],
@@ -85,6 +86,10 @@ function ProcessosPage() {
     [allProcessos, categoriasBackend],
   );
   const tags = useMemo(() => Array.from(new Set(allProcessos.flatMap((processo) => processo.tags ?? []))), [allProcessos]);
+  const manageableAreas = useMemo(
+    () => isAdmin ? areas : areas.filter((area) => area.id === currentAreaId),
+    [areas, currentAreaId, isAdmin],
+  );
 
   const processos = useMemo(() => {
     const q = query.toLowerCase().trim();
@@ -114,6 +119,14 @@ function ProcessosPage() {
     });
   }
 
+  function openCreateDialog() {
+    setDraft((current) => ({
+      ...current,
+      areaId: isAdmin ? current.areaId : currentAreaId ?? "",
+    }));
+    setNewOpen(true);
+  }
+
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -122,7 +135,7 @@ function ProcessosPage() {
           <p className="mt-1 text-sm text-muted-foreground">Consulte POPs, fluxos, guias e documentos internos.</p>
         </div>
         {canManage && (
-          <Button type="button" className="gap-2" onClick={() => setNewOpen(true)}>
+          <Button type="button" className="gap-2" onClick={openCreateDialog}>
             <Plus className="h-4 w-4" />
             Novo Processo
           </Button>
@@ -217,7 +230,7 @@ function ProcessosPage() {
             <Select value={draft.areaId} onValueChange={(value) => setDraft((current) => ({ ...current, areaId: value }))}>
               <SelectTrigger><SelectValue placeholder="Area" /></SelectTrigger>
               <SelectContent>
-                {areas.map((area) => <SelectItem key={area.id} value={area.id}>{area.nome}</SelectItem>)}
+                {manageableAreas.map((area) => <SelectItem key={area.id} value={area.id}>{area.nome}</SelectItem>)}
               </SelectContent>
             </Select>
             <Input

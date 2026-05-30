@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Download, Plus } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { DemandaRow } from "@/components/intrahub/DemandaRow";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -13,7 +14,8 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
-import type { Demanda, DemandaStatus, PrioridadeDemanda } from "@/lib/types";
+import { usePermissions } from "@/hooks/use-permissions";
+import type { DemandaStatus, PrioridadeDemanda } from "@/lib/types";
 import { getAreas } from "@/lib/backend/areas";
 import { getDemandas } from "@/lib/backend/demandas";
 
@@ -26,24 +28,10 @@ const PAGE_SIZE = 5;
 const DEMANDA_STATUS_OPTIONS: DemandaStatus[] = ["aberta", "em_analise", "em_andamento", "concluida", "cancelada", "rejeitada"];
 const PRIORIDADE_OPTIONS: PrioridadeDemanda[] = ["baixa", "media", "alta", "urgente"];
 
-function toCsv(rows: Demanda[], areas: { id: string; nome: string }[]) {
-  const header = ["ID", "Título", "Área", "Prioridade", "Status", "Criada em", "Prazo"];
-  const body = rows.map((demanda) => [
-    demanda.id,
-    demanda.titulo,
-    areas.find((area) => area.id === demanda.areaId)?.nome ?? demanda.areaId,
-    demanda.prioridade,
-    demanda.status,
-    demanda.criadaEm.toISOString(),
-    demanda.prazo?.toISOString() ?? "",
-  ]);
-  return [header, ...body]
-    .map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(","))
-    .join("\n");
-}
-
 function DemandasPage() {
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
+  const { currentUser } = usePermissions();
+  const [query, setQuery] = useState("");
   const [tab, setTab] = useState("minhas");
   const [status, setStatus] = useState("todos");
   const [area, setArea] = useState("todas");
@@ -62,7 +50,23 @@ function DemandasPage() {
   });
 
   const filtered = useMemo(() => {
+    const q = query.toLowerCase().trim();
     return demandas.filter((demanda) => {
+      const demandaArea = areas.find((item) => item.id === demanda.areaId);
+      const responsavel = demandaArea?.responsaveis.find((item) => item.id === demanda.responsavelId);
+      const searchable = [
+        demanda.id,
+        demanda.titulo,
+        demanda.descricao,
+        demanda.status,
+        demanda.prioridade,
+        demanda.categoria,
+        ...(demanda.tags ?? []),
+        demandaArea?.nome,
+        responsavel?.nome,
+      ].filter(Boolean).join(" ").toLowerCase();
+
+      if (q && !searchable.includes(q)) return false;
       if (status !== "todos" && demanda.status !== status) return false;
       if (area !== "todas" && demanda.areaId !== area) return false;
       if (prioridade !== "todas" && demanda.prioridade !== prioridade) return false;
@@ -71,27 +75,13 @@ function DemandasPage() {
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         if (demanda.criadaEm < sevenDaysAgo) return false;
       }
-      if (tab === "minhas" && demanda.solicitanteId !== user?.id) return false;
-      if (tab === "area") {
-        const demandaArea = areas.find((item) => item.id === demanda.areaId);
-        if (!demandaArea?.responsaveis.some((responsavel) => responsavel.id === user?.id)) return false;
-      }
+      if (tab === "minhas" && demanda.solicitanteId !== currentUser?.id) return false;
       return true;
     });
-  }, [area, areas, demandas, periodo, prioridade, status, tab, user?.id]);
+  }, [area, areas, currentUser?.id, demandas, periodo, prioridade, query, status, tab]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
-  function exportCsv() {
-    const blob = new Blob([toCsv(filtered, areas)], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "demandas.csv";
-    link.click();
-    URL.revokeObjectURL(url);
-  }
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6">
@@ -101,10 +91,6 @@ function DemandasPage() {
           <p className="mt-1 text-sm text-muted-foreground">Acompanhe solicitações, prazos e responsáveis.</p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Button type="button" variant="outline" className="gap-2" onClick={exportCsv}>
-            <Download className="h-4 w-4" />
-            Exportar CSV
-          </Button>
           <Button asChild className="gap-2">
             <Link to="/demandas/nova">
               <Plus className="h-4 w-4" />
@@ -115,14 +101,22 @@ function DemandasPage() {
       </header>
 
       <Tabs value={tab} onValueChange={(value) => { setTab(value); setPage(1); }}>
-        <TabsList className="grid w-full grid-cols-3 md:w-auto md:inline-grid">
+        <TabsList className="grid w-full grid-cols-2 md:w-auto md:inline-grid">
           <TabsTrigger value="minhas">Minhas Demandas</TabsTrigger>
           <TabsTrigger value="todas">Todas as Demandas</TabsTrigger>
-          <TabsTrigger value="area">Para Minha Área</TabsTrigger>
         </TabsList>
       </Tabs>
 
       <div className="grid gap-3 rounded-xl border border-border bg-card p-4 shadow-soft sm:grid-cols-2 lg:grid-cols-4">
+        <div className="relative sm:col-span-2 lg:col-span-4">
+          <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            className="pl-9"
+            value={query}
+            onChange={(event) => { setQuery(event.target.value); setPage(1); }}
+            placeholder="Buscar por titulo, descricao, area, responsavel, status ou ID"
+          />
+        </div>
         <Select value={status} onValueChange={(value) => { setStatus(value); setPage(1); }}>
           <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
@@ -158,17 +152,17 @@ function DemandasPage() {
         {isError && <div className="p-8 text-sm text-destructive">Não foi possível carregar as demandas do backend.</div>}
         {!isLoading && !isError && (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[980px] text-sm">
+          <table className="w-full min-w-[920px] text-sm">
             <thead className="bg-surface text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
-                <th className="px-4 py-3 text-left font-semibold">#ID</th>
+                <th className="w-16 px-3 py-3 text-left font-semibold">ID</th>
                 <th className="px-4 py-3 text-left font-semibold">Título</th>
                 <th className="px-4 py-3 text-left font-semibold">Área</th>
                 <th className="px-4 py-3 text-left font-semibold">Prioridade</th>
                 <th className="px-4 py-3 text-left font-semibold">Status</th>
                 <th className="px-4 py-3 text-left font-semibold">Responsável</th>
                 <th className="px-4 py-3 text-left font-semibold">Criada em</th>
-                <th className="px-4 py-3 text-left font-semibold">Prazo</th>
+                <th className="px-4 py-3 text-left font-semibold">Prazos</th>
                 <th className="px-4 py-3 text-right font-semibold">Ações</th>
               </tr>
             </thead>

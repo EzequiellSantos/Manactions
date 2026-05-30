@@ -58,6 +58,7 @@ export class SupabaseStrategy extends PassportStrategy(Strategy, 'jwt') {
           email: payload.email,
           nome,
           avatarUrl: payload.user_metadata?.avatar_url,
+          recebeDemandas: false,
         },
       });
     }

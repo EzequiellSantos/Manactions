@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, CalendarClock, FileText, Send, Tag, UserRound } from "lucide-react";
+import { ArrowLeft, CalendarClock, Send, Tag, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { PrioridadeBadge } from "@/components/intrahub/PrioridadeBadge";
 import { StatusBadge } from "@/components/intrahub/StatusBadge";
 import { TimelineEvento } from "@/components/intrahub/TimelineEvento";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   AlertDialog,
@@ -24,12 +25,21 @@ import { useAuth } from "@/hooks/use-auth";
 import { getAreas } from "@/lib/backend/areas";
 import {
   addDemandaComment,
+  assignDemanda,
   assumeDemanda,
   getDemandaById,
   updateDemanda,
   updateDemandaStatus,
 } from "@/lib/backend/demandas";
 import { getUsers } from "@/lib/backend/users";
+import { usePermissions } from "@/hooks/use-permissions";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { DemandaStatus } from "@/lib/types";
 
 export const Route = createFileRoute("/_authenticated/demandas/$id")({
@@ -52,20 +62,17 @@ function initials(name?: string) {
   return name.split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("");
 }
 
-function nextStatus(status: DemandaStatus): DemandaStatus | null {
-  const map: Partial<Record<DemandaStatus, DemandaStatus>> = {
-    aberta: "em_analise",
-    em_analise: "em_andamento",
-    em_andamento: "concluida",
-  };
-  return map[status] ?? null;
-}
+const DEMANDA_STATUS_OPTIONS: DemandaStatus[] = ["aberta", "em_analise", "em_andamento", "concluida", "cancelada", "rejeitada"];
 
 function DemandaDetailPage() {
   const { id } = Route.useParams();
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
+  const { currentUser, canManageDemanda, canReassignDemanda } = usePermissions();
   const queryClient = useQueryClient();
   const [comentario, setComentario] = useState("");
+  const [selectedResponsavelId, setSelectedResponsavelId] = useState("");
+  const [statusDraft, setStatusDraft] = useState<DemandaStatus>("aberta");
+  const [prazoResolucaoDraft, setPrazoResolucaoDraft] = useState("");
 
   const { data: demanda, isLoading, isError } = useQuery({
     queryKey: ["demandas", id],
@@ -93,6 +100,16 @@ function DemandaDetailPage() {
     onError: () => toast.error("Nao foi possivel assumir a demanda"),
   });
 
+  const assignMutation = useMutation({
+    mutationFn: (responsavelId: string) => assignDemanda(id, responsavelId),
+    onSuccess: async () => {
+      setSelectedResponsavelId("");
+      await refreshDemandas();
+      toast.success("Demanda atribuida");
+    },
+    onError: () => toast.error("Nao foi possivel atribuir a demanda"),
+  });
+
   const statusMutation = useMutation({
     mutationFn: ({ status, comentario: motivo }: { status: DemandaStatus; comentario?: string }) =>
       updateDemandaStatus(id, status, motivo),
@@ -104,13 +121,19 @@ function DemandaDetailPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (payload: { titulo?: string; prazo?: string }) => updateDemanda(id, payload),
+    mutationFn: (payload: { titulo?: string; prazo?: string; prazoResolucao?: string }) => updateDemanda(id, payload),
     onSuccess: async () => {
       await refreshDemandas();
       toast.success("Demanda atualizada");
     },
     onError: () => toast.error("Nao foi possivel atualizar a demanda"),
   });
+
+  useEffect(() => {
+    if (!demanda) return;
+    setStatusDraft(demanda.status);
+    setPrazoResolucaoDraft(demanda.prazoResolucao ? demanda.prazoResolucao.toISOString().slice(0, 10) : "");
+  }, [demanda?.id, demanda?.prazoResolucao, demanda?.status]);
 
   const commentMutation = useMutation({
     mutationFn: (texto: string) => addDemandaComment(id, texto),
@@ -134,8 +157,34 @@ function DemandaDetailPage() {
   const area = areas.find((item) => item.id === demandaAtual.areaId);
   const responsavel = area?.responsaveis.find((item) => item.id === demandaAtual.responsavelId);
   const solicitante = usuarios.find((item) => item.id === demandaAtual.solicitanteId);
-  const isSolicitante = demandaAtual.solicitanteId === user?.id;
-  const isResponsavel = demandaAtual.responsavelId === user?.id || area?.responsaveis.some((item) => item.id === user?.id);
+  const comentarioIds = new Set(demandaAtual.comentarios.map((comentario) => comentario.id));
+  const timelineEventos = [
+    ...demandaAtual.historico.filter((evento) => {
+      const comentarioId = evento.metadados?.comentarioId;
+      return typeof comentarioId !== "string" || !comentarioIds.has(comentarioId);
+    }),
+    ...demandaAtual.comentarios.map((comentario) => ({
+      id: `comentario-${comentario.id}`,
+      tipo: "comentario",
+      descricao: comentario.texto,
+      autorId: comentario.autorId,
+      criadoEm: comentario.criadoEm,
+      metadados: { comentarioId: comentario.id },
+    })),
+  ].sort((a, b) => a.criadoEm.getTime() - b.criadoEm.getTime());
+  const isSolicitante = demandaAtual.solicitanteId === currentUser?.id;
+  const isResponsavelAtual = demandaAtual.responsavelId === currentUser?.id;
+  const isResponsavelDaArea = area?.responsaveis.some((item) => item.id === currentUser?.id) ?? false;
+  const isResponsavel = isResponsavelAtual || isResponsavelDaArea;
+  const canAssumir = isResponsavelDaArea && !isResponsavelAtual;
+  const canManageAtendimento = canManageDemanda(demandaAtual);
+  const canShowTriagem = canReassignDemanda(demandaAtual);
+  const responsaveisDisponiveis = usuarios.filter((usuario) =>
+    usuario.ativo &&
+    usuario.recebeDemandas &&
+    usuario.areaId === demandaAtual.areaId &&
+    canReassignDemanda(demandaAtual, usuario)
+  );
   const autores = new Map([
     ...usuarios.map((item) => [item.id, item.nome] as const),
     ...(area?.responsaveis ?? []).map((item) => [item.id, item.nome] as const),
@@ -147,19 +196,22 @@ function DemandaDetailPage() {
     updateMutation.mutate({ titulo: titulo.trim() });
   }
 
-  function addDeadline() {
-    const prazo = window.prompt("Informe o novo prazo no formato AAAA-MM-DD");
-    if (!prazo) return;
-    updateMutation.mutate({ prazo });
+  async function saveDemandControl() {
+    const updates: Promise<unknown>[] = [];
+    if (statusDraft !== demandaAtual.status) {
+      updates.push(statusMutation.mutateAsync({ status: statusDraft }));
+    }
+    const currentPrazoResolucao = demandaAtual.prazoResolucao ? demandaAtual.prazoResolucao.toISOString().slice(0, 10) : "";
+    if (prazoResolucaoDraft !== currentPrazoResolucao && prazoResolucaoDraft) {
+      updates.push(updateMutation.mutateAsync({ prazoResolucao: prazoResolucaoDraft }));
+    }
+    if (updates.length === 0) return;
+    await Promise.all(updates);
   }
 
-  function advanceStatus() {
-    const status = nextStatus(demandaAtual.status);
-    if (!status) {
-      toast.info("Esta demanda nao possui proxima transicao disponivel.");
-      return;
-    }
-    statusMutation.mutate({ status });
+  function assignSelectedResponsavel() {
+    if (!selectedResponsavelId || selectedResponsavelId === demandaAtual.responsavelId) return;
+    assignMutation.mutate(selectedResponsavelId);
   }
 
   function sendComment() {
@@ -217,9 +269,9 @@ function DemandaDetailPage() {
           )}
           {isResponsavel && (
             <>
-              <Button type="button" variant="outline" disabled={assumeMutation.isPending} onClick={() => assumeMutation.mutate()}>Assumir</Button>
-              <Button type="button" variant="outline" disabled={statusMutation.isPending} onClick={advanceStatus}>Alterar Status</Button>
-              <Button type="button" variant="outline" disabled={updateMutation.isPending} onClick={addDeadline}>Adicionar Prazo</Button>
+              {canAssumir && (
+                <Button type="button" variant="outline" disabled={assumeMutation.isPending} onClick={() => assumeMutation.mutate()}>Assumir</Button>
+              )}
               {demanda.status === "em_andamento" && (
                 <Button type="button" disabled={statusMutation.isPending} onClick={() => statusMutation.mutate({ status: "concluida" })}>Resolver</Button>
               )}
@@ -239,27 +291,12 @@ function DemandaDetailPage() {
           </section>
 
           <section className="rounded-xl border border-border bg-card p-6 shadow-soft">
-            <h2 className="font-display text-lg font-semibold">Anexos</h2>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {(demanda.anexos ?? []).map((anexo) => (
-                <div key={anexo.id} className="flex items-center gap-3 rounded-lg border border-border bg-surface p-3">
-                  <FileText className="h-5 w-5 text-primary" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{anexo.nome}</p>
-                    <p className="text-xs text-muted-foreground">{anexo.tipo} - {anexo.tamanho}</p>
-                  </div>
-                </div>
-              ))}
-              {(demanda.anexos ?? []).length === 0 && <p className="text-sm text-muted-foreground">Nenhum anexo enviado.</p>}
-            </div>
-          </section>
-
-          <section className="rounded-xl border border-border bg-card p-6 shadow-soft">
             <h2 className="font-display text-lg font-semibold">Historico</h2>
             <div className="mt-5">
-              {demanda.historico.map((evento) => (
+              {timelineEventos.map((evento) => (
                 <TimelineEvento key={evento.id} evento={evento} autorNome={autores.get(evento.autorId)} />
               ))}
+              {timelineEventos.length === 0 && <p className="text-sm text-muted-foreground">Nenhum evento registrado.</p>}
             </div>
           </section>
 
@@ -281,7 +318,8 @@ function DemandaDetailPage() {
               <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Categoria</dt><dd className="font-medium">{demanda.categoria || demanda.tags?.[0] || "-"}</dd></div>
               <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Criado por</dt><dd className="font-medium">{solicitante?.nome ?? demanda.solicitanteId}</dd></div>
               <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Criacao</dt><dd className="font-medium">{formatDate(demanda.criadaEm, true)}</dd></div>
-              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Prazo</dt><dd className="font-medium">{formatDate(demanda.prazo)}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Prazo solicitado</dt><dd className="font-medium">{formatDate(demanda.prazo)}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Prazo resolucao</dt><dd className="font-medium">{formatDate(demanda.prazoResolucao)}</dd></div>
               <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Atualizacao</dt><dd className="font-medium">{formatDate(demanda.atualizadaEm, true)}</dd></div>
             </dl>
           </section>
@@ -299,11 +337,81 @@ function DemandaDetailPage() {
                 <p className="text-xs text-muted-foreground">{responsavel?.cargo ?? "Aguardando triagem"}</p>
               </div>
             </div>
-            <Button type="button" variant="outline" className="mt-4 w-full gap-2" disabled>
-              <UserRound className="h-4 w-4" />
-              Reatribuir
-            </Button>
+            {canShowTriagem && (
+              <div className="mt-4 space-y-3 border-t border-border pt-4">
+                <div>
+                  <p className="text-sm font-medium">Triagem</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Atribua a demanda a alguem habilitado para receber demandas nesta area.</p>
+                </div>
+                <Select value={selectedResponsavelId} onValueChange={setSelectedResponsavelId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecionar responsavel" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {responsaveisDisponiveis.map((usuario) => (
+                      <SelectItem key={usuario.id} value={usuario.id}>
+                        {usuario.nome}{usuario.id === demandaAtual.responsavelId ? " (atual)" : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {responsaveisDisponiveis.length === 0 && (
+                  <p className="text-xs text-muted-foreground">Nenhum usuario habilitado para receber demandas nesta area.</p>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full gap-2"
+                  disabled={
+                    !selectedResponsavelId ||
+                    selectedResponsavelId === demandaAtual.responsavelId ||
+                    assignMutation.isPending
+                  }
+                  onClick={assignSelectedResponsavel}
+                >
+                  <UserRound className="h-4 w-4" />
+                  {assignMutation.isPending ? "Atribuindo..." : "Atribuir Demanda"}
+                </Button>
+              </div>
+            )}
           </section>
+
+          {canManageAtendimento && (
+            <section className="rounded-xl border border-border bg-card p-5 shadow-soft">
+              <h2 className="font-display text-base font-semibold">Controle da Demanda</h2>
+              <div className="mt-4 space-y-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Status</label>
+                  <Select value={statusDraft} onValueChange={(value) => setStatusDraft(value as DemandaStatus)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DEMANDA_STATUS_OPTIONS.map((status) => (
+                        <SelectItem key={status} value={status}>{status.replace("_", " ")}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Prazo de resolucao</label>
+                  <Input
+                    type="date"
+                    value={prazoResolucaoDraft}
+                    onChange={(event) => setPrazoResolucaoDraft(event.target.value)}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  className="w-full"
+                  disabled={statusMutation.isPending || updateMutation.isPending}
+                  onClick={saveDemandControl}
+                >
+                  {statusMutation.isPending || updateMutation.isPending ? "Salvando..." : "Salvar Controle"}
+                </Button>
+              </div>
+            </section>
+          )}
 
           <section className="rounded-xl border border-border bg-card p-5 shadow-soft">
             <h2 className="font-display text-base font-semibold">Tags</h2>
@@ -318,13 +426,6 @@ function DemandaDetailPage() {
             </div>
           </section>
 
-          <section className="rounded-xl border border-border bg-card p-5 shadow-soft">
-            <h2 className="flex items-center gap-2 font-display text-base font-semibold">
-              <CalendarClock className="h-4 w-4" />
-              SLA
-            </h2>
-            <p className="mt-3 text-sm text-muted-foreground">Prazos e regras de atendimento serao calculados pelo backend.</p>
-          </section>
         </aside>
       </div>
     </div>
