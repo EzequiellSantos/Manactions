@@ -13,10 +13,15 @@ async function bootstrap() {
     'http://localhost:8080',
   );
   const port = configService.get<number>('PORT', 3000);
+  const host = configService.get<string>('HOST', '0.0.0.0');
 
   app.enableCors({
     origin: frontendUrl,
     credentials: true,
+  });
+
+  app.getHttpAdapter().get('/', (_req, res) => {
+    res.status(200).json({ ok: true, service: 'IntraHub API' });
   });
 
   app.setGlobalPrefix('api');
@@ -47,6 +52,10 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api/docs', app, document);
 
-  await app.listen(port);
+  await app.listen(port, host);
+  console.log(`IntraHub API listening on http://${host}:${port}`);
 }
-bootstrap();
+bootstrap().catch((error) => {
+  console.error('Failed to bootstrap IntraHub API', error);
+  process.exit(1);
+});
