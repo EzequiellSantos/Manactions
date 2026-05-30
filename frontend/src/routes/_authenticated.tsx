@@ -1,9 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
 import { useAuth } from "@/hooks/use-auth";
 import { AppSidebar } from "@/components/intrahub/AppSidebar";
 import { Topbar } from "@/components/intrahub/Topbar";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -25,6 +26,7 @@ function AuthenticatedLayout() {
   const location = useRouterState({ select: (state) => state.location });
   const pathname = location.pathname;
   const redirectingRef = useRef(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -58,8 +60,14 @@ function AuthenticatedLayout() {
   return (
     <div className="flex min-h-screen w-full bg-surface">
       <AppSidebar />
+      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+        <SheetContent side="left" className="w-72 border-sidebar-border bg-sidebar p-0">
+          <SheetTitle className="sr-only">Menu principal</SheetTitle>
+          <AppSidebar variant="mobile" onNavigate={() => setMobileMenuOpen(false)} />
+        </SheetContent>
+      </Sheet>
       <div className="flex min-w-0 flex-1 flex-col">
-        <Topbar />
+        <Topbar onOpenMobileMenu={() => setMobileMenuOpen(true)} />
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
           <AnimatePresence mode="wait">
             <motion.div

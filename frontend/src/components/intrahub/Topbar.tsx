@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ChevronRight, LogOut, Moon, Sun } from "lucide-react";
+import { ChevronRight, LogOut, Menu, Moon, Sun } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -47,12 +47,27 @@ function Breadcrumb() {
   );
 }
 
-export function Topbar() {
+interface TopbarProps {
+  onOpenMobileMenu?: () => void;
+}
+
+export function Topbar({ onOpenMobileMenu }: TopbarProps) {
   const { displayName, initials, user, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-md sm:px-6">
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="md:hidden"
+        aria-label="Abrir menu"
+        onClick={onOpenMobileMenu}
+      >
+        <Menu className="h-5 w-5" />
+      </Button>
+
       <Breadcrumb />
 
       <div className="ml-auto flex items-center gap-1">
