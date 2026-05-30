@@ -33,7 +33,7 @@ function Breadcrumb() {
   return (
     <nav className="hidden items-center gap-1.5 text-sm sm:flex">
       <Link to="/dashboard" className="text-muted-foreground hover:text-foreground">
-        IntraHub
+        Manactions
       </Link>
       {parts.map((part, index) => (
         <span key={`${part}-${index}`} className="flex items-center gap-1.5">

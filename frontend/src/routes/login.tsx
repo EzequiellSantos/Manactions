@@ -16,7 +16,7 @@ export const Route = createFileRoute("/login")({
   }),
   head: () => ({
     meta: [
-      { title: "Entrar — IntraHub" },
+      { title: "Entrar — Manactions" },
       { name: "description", content: "Acesse sua central de informações e demandas." },
     ],
   }),
@@ -79,7 +79,7 @@ function LoginPage() {
         <div className="mb-8 flex flex-col items-center text-center">
           <Logo />
           <h1 className="mt-6 font-display text-3xl font-bold tracking-tight">
-            <span className="text-gradient-brand">IntraHub</span>
+            <span className="text-gradient-brand">Manactions</span>
           </h1>
           <p className="mt-2 max-w-xs text-sm text-muted-foreground">
             Sua central de informações e demandas

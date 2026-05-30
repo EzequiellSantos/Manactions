@@ -12,7 +12,7 @@ import { getAreaIcon } from "@/lib/area-icons";
 import { getAreaBySlugFromApi } from "@/lib/backend/areas";
 
 export const Route = createFileRoute("/_authenticated/areas/$slug")({
-  head: () => ({ meta: [{ title: "Área — IntraHub" }] }),
+  head: () => ({ meta: [{ title: "Área — Manactions" }] }),
   component: AreaDetailPage,
 });
 

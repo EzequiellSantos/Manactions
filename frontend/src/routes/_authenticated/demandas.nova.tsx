@@ -34,7 +34,7 @@ import { getDemandaCategoryOptions } from "@/lib/demanda-categories";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/demandas/nova")({
-  head: () => ({ meta: [{ title: "Nova Demanda — IntraHub" }] }),
+  head: () => ({ meta: [{ title: "Nova Demanda — Manactions" }] }),
   component: NovaDemandaPage,
 });
 

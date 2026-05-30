@@ -52,7 +52,7 @@ const areaSchema = z.object({
 type AreaFormValues = z.infer<typeof areaSchema>;
 
 export const Route = createFileRoute("/_authenticated/areas/nova")({
-  head: () => ({ meta: [{ title: "Nova Área — IntraHub" }] }),
+  head: () => ({ meta: [{ title: "Nova Área — Manactions" }] }),
   component: NovaAreaPage,
 });
 

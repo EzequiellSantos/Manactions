@@ -20,7 +20,7 @@ import { getAreas } from "@/lib/backend/areas";
 import { getDemandas } from "@/lib/backend/demandas";
 
 export const Route = createFileRoute("/_authenticated/demandas/")({
-  head: () => ({ meta: [{ title: "Minhas Demandas — IntraHub" }] }),
+  head: () => ({ meta: [{ title: "Minhas Demandas — Manactions" }] }),
   component: DemandasPage,
 });
 

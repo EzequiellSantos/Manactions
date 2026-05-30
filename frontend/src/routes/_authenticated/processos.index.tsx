@@ -27,7 +27,7 @@ import { getAreas } from "@/lib/backend/areas";
 import { createProcesso, getProcessoCategorias, getProcessos } from "@/lib/backend/processos";
 
 export const Route = createFileRoute("/_authenticated/processos/")({
-  head: () => ({ meta: [{ title: "Processos e Base de Conhecimento - IntraHub" }] }),
+  head: () => ({ meta: [{ title: "Processos e Base de Conhecimento - Manactions" }] }),
   component: ProcessosPage,
 });
 

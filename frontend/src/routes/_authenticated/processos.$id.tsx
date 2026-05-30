@@ -21,7 +21,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/_authenticated/processos/$id")({
-  head: () => ({ meta: [{ title: "Processo — IntraHub" }] }),
+  head: () => ({ meta: [{ title: "Processo — Manactions" }] }),
   component: ProcessoDetailPage,
 });
 

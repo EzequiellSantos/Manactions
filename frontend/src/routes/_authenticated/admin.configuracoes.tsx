@@ -36,7 +36,7 @@ import {
 import type { Area } from "@/lib/types";
 
 export const Route = createFileRoute("/_authenticated/admin/configuracoes")({
-  head: () => ({ meta: [{ title: "Admin - Configuracoes - IntraHub" }] }),
+  head: () => ({ meta: [{ title: "Admin - Configuracoes - Manactions" }] }),
   component: AdminConfiguracoesPage,
 });
 

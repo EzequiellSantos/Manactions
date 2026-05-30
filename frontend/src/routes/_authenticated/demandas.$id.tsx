@@ -43,7 +43,7 @@ import {
 import type { DemandaStatus } from "@/lib/types";
 
 export const Route = createFileRoute("/_authenticated/demandas/$id")({
-  head: () => ({ meta: [{ title: "Demanda - IntraHub" }] }),
+  head: () => ({ meta: [{ title: "Demanda - Manactions" }] }),
   component: DemandaDetailPage,
 });
 

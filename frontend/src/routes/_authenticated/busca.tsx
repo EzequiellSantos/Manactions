@@ -3,7 +3,7 @@ import { Search } from "lucide-react";
 import { EmptyState } from "@/components/intrahub/EmptyState";
 
 export const Route = createFileRoute("/_authenticated/busca")({
-  head: () => ({ meta: [{ title: "Busca — IntraHub" }] }),
+  head: () => ({ meta: [{ title: "Busca — Manactions" }] }),
   component: BuscaPage,
 });
 

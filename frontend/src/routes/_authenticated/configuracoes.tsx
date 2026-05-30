@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
-  head: () => ({ meta: [{ title: "Configurações — IntraHub" }] }),
+  head: () => ({ meta: [{ title: "Configurações — Manactions" }] }),
   component: ConfigPage,
 });
 

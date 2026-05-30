@@ -129,7 +129,7 @@ export function PerfilPage() {
               <label className="flex items-center justify-between gap-4">
                 <span>
                   <span className="block text-sm font-medium">In-app</span>
-                  <span className="text-xs text-muted-foreground">Receber alertas dentro do IntraHub.</span>
+                  <span className="text-xs text-muted-foreground">Receber alertas dentro do Manactions.</span>
                 </span>
                 <Switch checked={inAppNotify} onCheckedChange={setInAppNotify} />
               </label>

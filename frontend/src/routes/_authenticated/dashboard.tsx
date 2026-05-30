@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Dashboard — IntraHub" },
+      { title: "Dashboard — Manactions" },
       { name: "description", content: "Resumo das suas demandas, áreas e avisos." },
     ],
   }),

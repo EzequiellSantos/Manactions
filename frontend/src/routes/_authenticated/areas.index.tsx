@@ -15,7 +15,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { getAreas } from "@/lib/backend/areas";
 
 export const Route = createFileRoute("/_authenticated/areas/")({
-  head: () => ({ meta: [{ title: "Áreas da Empresa — IntraHub" }] }),
+  head: () => ({ meta: [{ title: "Áreas da Empresa — Manactions" }] }),
   component: AreasPage,
 });
 
