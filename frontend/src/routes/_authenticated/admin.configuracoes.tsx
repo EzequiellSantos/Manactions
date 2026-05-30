@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Edit, Loader2, Trash2 } from "lucide-react";
+import { CheckCircle2, Edit, Loader2, Trash2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -73,6 +73,23 @@ function textToResponsabilidades(value: string) {
     .split(/\r?\n|,/)
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function UserStatusBadge({ ativo }: { ativo: boolean }) {
+  const Icon = ativo ? CheckCircle2 : XCircle;
+
+  return (
+    <span
+      className={
+        ativo
+          ? "inline-flex items-center gap-1.5 rounded-full border border-success/20 bg-success/10 px-2.5 py-0.5 text-xs font-medium text-success"
+          : "inline-flex items-center gap-1.5 rounded-full border border-destructive/20 bg-destructive/10 px-2.5 py-0.5 text-xs font-medium text-destructive"
+      }
+    >
+      <Icon className="h-3.5 w-3.5" />
+      {ativo ? "Ativo" : "Desativado"}
+    </span>
+  );
 }
 
 function AdminConfiguracoesPage() {
@@ -246,11 +263,12 @@ function AdminConfiguracoesPage() {
             <h2 className="font-display text-lg font-semibold">Usuarios</h2>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[860px] text-sm">
+            <table className="w-full min-w-[960px] text-sm">
               <thead className="text-xs uppercase text-muted-foreground">
                 <tr>
                   <th className="py-2 text-left">Nome</th>
                   <th className="py-2 text-left">E-mail</th>
+                  <th className="py-2 text-left">Status</th>
                   <th className="py-2 text-left">Papel</th>
                   <th className="py-2 text-left">Area</th>
                   <th className="py-2 text-left">Recebe demandas</th>
@@ -260,13 +278,14 @@ function AdminConfiguracoesPage() {
               <tbody className="divide-y divide-border">
                 {loadingUsuarios && (
                   <tr>
-                    <td className="py-4 text-sm text-muted-foreground" colSpan={6}>Carregando usuarios...</td>
+                    <td className="py-4 text-sm text-muted-foreground" colSpan={7}>Carregando usuarios...</td>
                   </tr>
                 )}
                 {!loadingUsuarios && usuarios.map((usuario) => (
                   <tr key={usuario.id}>
                     <td className="py-3 font-medium">{usuario.nome}</td>
                     <td className="py-3 text-muted-foreground">{usuario.email}</td>
+                    <td className="py-3"><UserStatusBadge ativo={usuario.ativo} /></td>
                     <td className="py-3 text-muted-foreground">{usuario.papel}</td>
                     <td className="py-3 text-muted-foreground">{usuario.area?.nome ?? "Sem area"}</td>
                     <td className="py-3 text-muted-foreground">{usuario.recebeDemandas ? "Sim" : "Nao"}</td>
