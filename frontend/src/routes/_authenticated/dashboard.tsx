@@ -38,8 +38,8 @@ function withAlpha(hexColor: string, alpha: number) {
 const STAT_CARDS = [
   { key: "totalAreas", label: "Áreas cadastradas", icon: Layers, accent: "text-primary bg-primary/10" },
   { key: "minhasDemandasAbertas", label: "Minhas demandas abertas", icon: ListChecks, accent: "text-secondary bg-secondary/10" },
-  { key: "pendentesAprovacao", label: "Pendentes de aprovação", icon: ClockAlert, accent: "text-warning bg-warning/10" },
-  { key: "processosRecentes", label: "Processos acessados", icon: ClipboardList, accent: "text-success bg-success/10" },
+  { key: "pendentesAprovacao", label: "Demandas em análise", icon: ClockAlert, accent: "text-warning bg-warning/10" },
+  { key: "processosRecentes", label: "Processos cadastrados", icon: ClipboardList, accent: "text-success bg-success/10" },
 ] as const;
 
 const STAT_CARD_LINKS: Record<(typeof STAT_CARDS)[number]["key"], "/areas" | "/demandas" | "/processos"> = {
