@@ -63,23 +63,42 @@ function normalizeKey(value?: string) {
     .toLowerCase();
 }
 
+function normalizeSlug(value?: string) {
+  return normalizeKey(value).replace(/\s+/g, "-");
+}
+
+function hasToken(value: string, token: string) {
+  return value.split(/[^a-z0-9]+/).includes(token);
+}
+
 export function getDemandaCategoryOptions(area?: Pick<Area, "nome" | "slug" | "categoria"> | null) {
-  const source = `${area?.slug ?? ""} ${area?.nome ?? ""} ${area?.categoria ?? ""}`;
-  const normalized = normalizeKey(source);
+  const slug = normalizeSlug(area?.slug);
+  const nome = normalizeKey(area?.nome);
+  const categoria = normalizeKey(area?.categoria);
+  const areaIdentity = `${slug} ${nome}`;
 
   const areaKey =
-    normalized.includes("tecnologia") || normalized.includes("informacao") || normalized.includes("ti")
-      ? "ti"
-      : normalized.includes("recursos humanos") || normalized.includes("gente") || normalized.includes("rh")
-        ? "rh"
-        : normalized.includes("financeiro")
-          ? "financeiro"
-          : normalized.includes("marketing") || normalized.includes("comunicacao")
-            ? "marketing"
-            : normalized.includes("juridico")
-              ? "juridico"
-              : normalized.includes("operacoes") || normalized.includes("operacional") || normalized.includes("facilities")
-                ? "operacoes"
+    areaIdentity.includes("recursos-humanos") ||
+    areaIdentity.includes("recursos humanos") ||
+    areaIdentity.includes("gente") ||
+    hasToken(areaIdentity, "rh")
+      ? "rh"
+      : areaIdentity.includes("financeiro")
+        ? "financeiro"
+        : areaIdentity.includes("marketing") || areaIdentity.includes("comunicacao")
+          ? "marketing"
+          : areaIdentity.includes("juridico")
+            ? "juridico"
+            : areaIdentity.includes("operacoes") ||
+                areaIdentity.includes("operacional") ||
+                areaIdentity.includes("facilities") ||
+                categoria.includes("operacional")
+              ? "operacoes"
+              : areaIdentity.includes("tecnologia-da-informacao") ||
+                  areaIdentity.includes("tecnologia da informacao") ||
+                  areaIdentity.includes("informatica") ||
+                  hasToken(areaIdentity, "ti")
+                ? "ti"
                 : undefined;
 
   const options = areaKey ? CATEGORY_OPTIONS_BY_AREA_KEY[areaKey] : [];

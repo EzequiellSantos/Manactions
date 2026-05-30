@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Download, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { DemandaRow } from "@/components/intrahub/DemandaRow";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,7 +13,8 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
-import type { Demanda, DemandaStatus, PrioridadeDemanda } from "@/lib/types";
+import { usePermissions } from "@/hooks/use-permissions";
+import type { DemandaStatus, PrioridadeDemanda } from "@/lib/types";
 import { getAreas } from "@/lib/backend/areas";
 import { getDemandas } from "@/lib/backend/demandas";
 
@@ -26,7 +27,7 @@ const PAGE_SIZE = 5;
 const DEMANDA_STATUS_OPTIONS: DemandaStatus[] = ["aberta", "em_analise", "em_andamento", "concluida", "cancelada", "rejeitada"];
 const PRIORIDADE_OPTIONS: PrioridadeDemanda[] = ["baixa", "media", "alta", "urgente"];
 
-function toCsv(rows: Demanda[], areas: { id: string; nome: string }[]) {
+function toCsv(rows: any[], areas: { id: string; nome: string }[]) {
   const header = ["ID", "Título", "Área", "Prioridade", "Status", "Criada em", "Prazo"];
   const body = rows.map((demanda) => [
     demanda.id,
@@ -43,7 +44,8 @@ function toCsv(rows: Demanda[], areas: { id: string; nome: string }[]) {
 }
 
 function DemandasPage() {
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
+  const { currentUser } = usePermissions();
   const [tab, setTab] = useState("minhas");
   const [status, setStatus] = useState("todos");
   const [area, setArea] = useState("todas");
@@ -71,27 +73,13 @@ function DemandasPage() {
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         if (demanda.criadaEm < sevenDaysAgo) return false;
       }
-      if (tab === "minhas" && demanda.solicitanteId !== user?.id) return false;
-      if (tab === "area") {
-        const demandaArea = areas.find((item) => item.id === demanda.areaId);
-        if (!demandaArea?.responsaveis.some((responsavel) => responsavel.id === user?.id)) return false;
-      }
+      if (tab === "minhas" && demanda.solicitanteId !== currentUser?.id) return false;
       return true;
     });
-  }, [area, areas, demandas, periodo, prioridade, status, tab, user?.id]);
+  }, [area, currentUser?.id, demandas, periodo, prioridade, status, tab]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
-  function exportCsv() {
-    const blob = new Blob([toCsv(filtered, areas)], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "demandas.csv";
-    link.click();
-    URL.revokeObjectURL(url);
-  }
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6">
@@ -101,10 +89,6 @@ function DemandasPage() {
           <p className="mt-1 text-sm text-muted-foreground">Acompanhe solicitações, prazos e responsáveis.</p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Button type="button" variant="outline" className="gap-2" onClick={exportCsv}>
-            <Download className="h-4 w-4" />
-            Exportar CSV
-          </Button>
           <Button asChild className="gap-2">
             <Link to="/demandas/nova">
               <Plus className="h-4 w-4" />
@@ -115,10 +99,9 @@ function DemandasPage() {
       </header>
 
       <Tabs value={tab} onValueChange={(value) => { setTab(value); setPage(1); }}>
-        <TabsList className="grid w-full grid-cols-3 md:w-auto md:inline-grid">
+        <TabsList className="grid w-full grid-cols-2 md:w-auto md:inline-grid">
           <TabsTrigger value="minhas">Minhas Demandas</TabsTrigger>
           <TabsTrigger value="todas">Todas as Demandas</TabsTrigger>
-          <TabsTrigger value="area">Para Minha Área</TabsTrigger>
         </TabsList>
       </Tabs>
 

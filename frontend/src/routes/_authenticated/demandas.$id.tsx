@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, CalendarClock, FileText, Send, Tag, UserRound } from "lucide-react";
+import { ArrowLeft, CalendarClock, Send, Tag, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { PrioridadeBadge } from "@/components/intrahub/PrioridadeBadge";
 import { StatusBadge } from "@/components/intrahub/StatusBadge";
@@ -24,12 +24,21 @@ import { useAuth } from "@/hooks/use-auth";
 import { getAreas } from "@/lib/backend/areas";
 import {
   addDemandaComment,
+  assignDemanda,
   assumeDemanda,
   getDemandaById,
   updateDemanda,
   updateDemandaStatus,
 } from "@/lib/backend/demandas";
 import { getUsers } from "@/lib/backend/users";
+import { usePermissions } from "@/hooks/use-permissions";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { DemandaStatus } from "@/lib/types";
 
 export const Route = createFileRoute("/_authenticated/demandas/$id")({
@@ -64,8 +73,10 @@ function nextStatus(status: DemandaStatus): DemandaStatus | null {
 function DemandaDetailPage() {
   const { id } = Route.useParams();
   const { user, loading } = useAuth();
+  const { canReassignDemanda } = usePermissions();
   const queryClient = useQueryClient();
   const [comentario, setComentario] = useState("");
+  const [selectedResponsavelId, setSelectedResponsavelId] = useState("");
 
   const { data: demanda, isLoading, isError } = useQuery({
     queryKey: ["demandas", id],
@@ -91,6 +102,16 @@ function DemandaDetailPage() {
       toast.success("Demanda assumida");
     },
     onError: () => toast.error("Nao foi possivel assumir a demanda"),
+  });
+
+  const assignMutation = useMutation({
+    mutationFn: (responsavelId: string) => assignDemanda(id, responsavelId),
+    onSuccess: async () => {
+      setSelectedResponsavelId("");
+      await refreshDemandas();
+      toast.success("Demanda atribuida");
+    },
+    onError: () => toast.error("Nao foi possivel atribuir a demanda"),
   });
 
   const statusMutation = useMutation({
@@ -134,8 +155,30 @@ function DemandaDetailPage() {
   const area = areas.find((item) => item.id === demandaAtual.areaId);
   const responsavel = area?.responsaveis.find((item) => item.id === demandaAtual.responsavelId);
   const solicitante = usuarios.find((item) => item.id === demandaAtual.solicitanteId);
+  const comentarioIds = new Set(demandaAtual.comentarios.map((comentario) => comentario.id));
+  const timelineEventos = [
+    ...demandaAtual.historico.filter((evento) => {
+      const comentarioId = evento.metadados?.comentarioId;
+      return typeof comentarioId !== "string" || !comentarioIds.has(comentarioId);
+    }),
+    ...demandaAtual.comentarios.map((comentario) => ({
+      id: `comentario-${comentario.id}`,
+      tipo: "comentario",
+      descricao: comentario.texto,
+      autorId: comentario.autorId,
+      criadoEm: comentario.criadoEm,
+      metadados: { comentarioId: comentario.id },
+    })),
+  ].sort((a, b) => a.criadoEm.getTime() - b.criadoEm.getTime());
   const isSolicitante = demandaAtual.solicitanteId === user?.id;
   const isResponsavel = demandaAtual.responsavelId === user?.id || area?.responsaveis.some((item) => item.id === user?.id);
+  const canShowTriagem = canReassignDemanda(demandaAtual);
+  const responsaveisDisponiveis = usuarios.filter((usuario) =>
+    usuario.ativo &&
+    usuario.recebeDemandas &&
+    usuario.areaId === demandaAtual.areaId &&
+    canReassignDemanda(demandaAtual, usuario)
+  );
   const autores = new Map([
     ...usuarios.map((item) => [item.id, item.nome] as const),
     ...(area?.responsaveis ?? []).map((item) => [item.id, item.nome] as const),
@@ -160,6 +203,11 @@ function DemandaDetailPage() {
       return;
     }
     statusMutation.mutate({ status });
+  }
+
+  function assignSelectedResponsavel() {
+    if (!selectedResponsavelId || selectedResponsavelId === demandaAtual.responsavelId) return;
+    assignMutation.mutate(selectedResponsavelId);
   }
 
   function sendComment() {
@@ -239,27 +287,12 @@ function DemandaDetailPage() {
           </section>
 
           <section className="rounded-xl border border-border bg-card p-6 shadow-soft">
-            <h2 className="font-display text-lg font-semibold">Anexos</h2>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {(demanda.anexos ?? []).map((anexo) => (
-                <div key={anexo.id} className="flex items-center gap-3 rounded-lg border border-border bg-surface p-3">
-                  <FileText className="h-5 w-5 text-primary" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{anexo.nome}</p>
-                    <p className="text-xs text-muted-foreground">{anexo.tipo} - {anexo.tamanho}</p>
-                  </div>
-                </div>
-              ))}
-              {(demanda.anexos ?? []).length === 0 && <p className="text-sm text-muted-foreground">Nenhum anexo enviado.</p>}
-            </div>
-          </section>
-
-          <section className="rounded-xl border border-border bg-card p-6 shadow-soft">
             <h2 className="font-display text-lg font-semibold">Historico</h2>
             <div className="mt-5">
-              {demanda.historico.map((evento) => (
+              {timelineEventos.map((evento) => (
                 <TimelineEvento key={evento.id} evento={evento} autorNome={autores.get(evento.autorId)} />
               ))}
+              {timelineEventos.length === 0 && <p className="text-sm text-muted-foreground">Nenhum evento registrado.</p>}
             </div>
           </section>
 
@@ -299,10 +332,43 @@ function DemandaDetailPage() {
                 <p className="text-xs text-muted-foreground">{responsavel?.cargo ?? "Aguardando triagem"}</p>
               </div>
             </div>
-            <Button type="button" variant="outline" className="mt-4 w-full gap-2" disabled>
-              <UserRound className="h-4 w-4" />
-              Reatribuir
-            </Button>
+            {canShowTriagem && (
+              <div className="mt-4 space-y-3 border-t border-border pt-4">
+                <div>
+                  <p className="text-sm font-medium">Triagem</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Atribua a demanda a alguem habilitado para receber demandas nesta area.</p>
+                </div>
+                <Select value={selectedResponsavelId} onValueChange={setSelectedResponsavelId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecionar responsavel" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {responsaveisDisponiveis.map((usuario) => (
+                      <SelectItem key={usuario.id} value={usuario.id}>
+                        {usuario.nome}{usuario.id === demandaAtual.responsavelId ? " (atual)" : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {responsaveisDisponiveis.length === 0 && (
+                  <p className="text-xs text-muted-foreground">Nenhum usuario habilitado para receber demandas nesta area.</p>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full gap-2"
+                  disabled={
+                    !selectedResponsavelId ||
+                    selectedResponsavelId === demandaAtual.responsavelId ||
+                    assignMutation.isPending
+                  }
+                  onClick={assignSelectedResponsavel}
+                >
+                  <UserRound className="h-4 w-4" />
+                  {assignMutation.isPending ? "Atribuindo..." : "Atribuir Demanda"}
+                </Button>
+              </div>
+            )}
           </section>
 
           <section className="rounded-xl border border-border bg-card p-5 shadow-soft">

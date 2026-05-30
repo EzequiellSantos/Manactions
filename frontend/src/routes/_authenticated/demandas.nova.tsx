@@ -5,7 +5,6 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { ArrowLeft, CheckCircle2, Search, Send } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { FileUpload } from "@/components/intrahub/FileUpload";
 import { PrioridadeBadge } from "@/components/intrahub/PrioridadeBadge";
 import { Stepper } from "@/components/intrahub/Stepper";
 import { Button } from "@/components/ui/button";
@@ -111,6 +110,11 @@ function NovaDemandaPage() {
     if (ok) setEtapa(3);
   }
 
+  function selectArea(area: Area) {
+    setAreaSelecionada(area);
+    setEtapa(2);
+  }
+
   function submitDemand() {
     if (!confirmado) return;
     if (!areaSelecionada) return;
@@ -146,6 +150,7 @@ function NovaDemandaPage() {
         <section className="space-y-5">
           <div>
             <h2 className="font-display text-lg font-semibold">Para qual área você precisa abrir esta demanda?</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Selecione uma área para continuar com os detalhes da demanda.</p>
             <div className="relative mt-3 max-w-lg">
               <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input className="pl-9" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar área" />
@@ -165,7 +170,7 @@ function NovaDemandaPage() {
                 <button
                   key={area.id}
                   type="button"
-                  onClick={() => setAreaSelecionada(area)}
+                  onClick={() => selectArea(area)}
                   className={cn(
                     "flex items-start gap-4 rounded-xl border bg-card p-5 text-left shadow-soft transition hover:border-primary/40",
                     selected ? "border-primary ring-2 ring-primary/20" : "border-border",
@@ -183,24 +188,6 @@ function NovaDemandaPage() {
             })}
           </div>
 
-          {areaSelecionada && (
-            <div className="grid gap-4 rounded-xl border border-border bg-card p-5 shadow-soft md:grid-cols-2">
-              <div>
-                <h3 className="font-display font-semibold">Canais da área</h3>
-                <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-                  {areaSelecionada.canaisContato.map((canal) => <li key={`${canal.tipo}-${canal.valor}`}>{canal.label}: {canal.valor}</li>)}
-                </ul>
-              </div>
-              <div>
-                <h3 className="font-display font-semibold">Responsáveis</h3>
-                <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-                  {areaSelecionada.responsaveis.map((responsavel) => <li key={responsavel.id}>{responsavel.nome} · {responsavel.cargo}</li>)}
-                </ul>
-              </div>
-            </div>
-          )}
-
-          <Button type="button" disabled={!areaSelecionada} onClick={() => setEtapa(2)}>Continuar</Button>
         </section>
       )}
 
@@ -261,11 +248,6 @@ function NovaDemandaPage() {
                 <FormMessage />
               </FormItem>
             )} />
-
-            <div>
-              <p className="mb-2 text-sm font-medium">Anexos</p>
-              <FileUpload />
-            </div>
 
             <div className="flex gap-2">
               <Button type="button" variant="outline" onClick={() => setEtapa(1)}>Voltar</Button>

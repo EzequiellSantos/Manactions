@@ -93,6 +93,13 @@ export async function assumeDemanda(id: string): Promise<Demanda> {
   }));
 }
 
+export async function assignDemanda(id: string, responsavelId: string): Promise<Demanda> {
+  return normalizeDemanda(await apiFetch<unknown>(`/demandas/${id}/atribuir`, {
+    method: "PATCH",
+    body: JSON.stringify({ responsavelId }),
+  }));
+}
+
 export async function addDemandaComment(id: string, texto: string): Promise<unknown> {
   return apiFetch(`/demandas/${id}/comentarios`, {
     method: "POST",

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -20,6 +21,7 @@ import {
 import { NotificacoesService } from '../notificacoes/notificacoes.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AlterarStatusDto } from './dto/alterar-status.dto';
+import { AtribuirDemandaDto } from './dto/atribuir-demanda.dto';
 import { CreateComentarioDto } from './dto/create-comentario.dto';
 import { CreateDemandaDto } from './dto/create-demanda.dto';
 import { FiltroDemandasDto } from './dto/filtro-demandas.dto';
@@ -332,6 +334,99 @@ export class DemandasService {
           );
         }
       }
+    }
+
+    return updated;
+  }
+
+  async atribuirDemanda(
+    id: string,
+    dto: AtribuirDemandaDto,
+    usuarioLogado: Usuario,
+  ) {
+    const demanda = await this.findById(id, usuarioLogado);
+
+    const podeAtribuir =
+      usuarioLogado.papel === Papel.ADMIN ||
+      (usuarioLogado.papel === Papel.GESTOR &&
+        usuarioLogado.areaId === demanda.areaId);
+
+    if (!podeAtribuir) {
+      throw new ForbiddenException(
+        'Somente gestores da area ou administradores podem atribuir demandas',
+      );
+    }
+
+    const responsavel = await this.prisma.usuario.findUnique({
+      where: { id: dto.responsavelId },
+    });
+
+    if (!responsavel || !responsavel.ativo) {
+      throw new NotFoundException('Responsavel nao encontrado');
+    }
+
+    if (!responsavel.recebeDemandas) {
+      throw new BadRequestException(
+        'Este usuario nao esta habilitado para receber demandas',
+      );
+    }
+
+    if (responsavel.areaId !== demanda.areaId) {
+      throw new BadRequestException(
+        'O responsavel precisa pertencer a mesma area da demanda',
+      );
+    }
+
+    if (demanda.responsavelId === responsavel.id) {
+      return demanda;
+    }
+
+    const responsavelAnteriorId = demanda.responsavelId;
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.demanda.update({
+        where: { id },
+        data: { responsavelId: responsavel.id },
+        include: demandaDetailInclude,
+      });
+
+      await tx.historicoEvento.create({
+        data: {
+          tipo: 'DEMANDA_ATRIBUIDA',
+          descricao: `${usuarioLogado.nome} atribuiu a demanda para ${responsavel.nome}`,
+          demandaId: id,
+          autorId: usuarioLogado.id,
+          metadados: {
+            responsavelAnteriorId,
+            responsavelNovoId: responsavel.id,
+          },
+        },
+      });
+
+      return result;
+    });
+
+    const link = this.notificacoesService.buildDemandaLink(id);
+
+    if (responsavel.notificacoesInApp) {
+      await this.notificacoesService.criarNotificacao(
+        responsavel.id,
+        'nova_atribuicao',
+        'Nova demanda atribuida',
+        `${usuarioLogado.nome} atribuiu a demanda "${demanda.titulo}" para voce.`,
+        link,
+      );
+    }
+
+    if (responsavel.notificacoesEmail) {
+      await this.notificacoesService.enviarEmailTemplate(
+        responsavel.email,
+        'nova_atribuicao',
+        {
+          demandaTitulo: demanda.titulo,
+          autor: usuarioLogado.nome,
+          link,
+        },
+      );
     }
 
     return updated;

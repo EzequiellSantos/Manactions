@@ -77,11 +77,6 @@ export function NotificationDropdown() {
             <Item key={n.id} n={n} />
           ))}
         </div>
-        <div className="border-t border-border px-2 py-2">
-          <Button variant="ghost" className="w-full justify-center text-xs" onClick={markAllAsRead}>
-            Marcar todas como lidas
-          </Button>
-        </div>
       </PopoverContent>
     </Popover>
   );

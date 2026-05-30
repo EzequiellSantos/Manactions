@@ -23,6 +23,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { DemandasService } from './demandas.service';
 import { AlterarStatusDto } from './dto/alterar-status.dto';
+import { AtribuirDemandaDto } from './dto/atribuir-demanda.dto';
 import { CreateComentarioDto } from './dto/create-comentario.dto';
 import { CreateDemandaDto } from './dto/create-demanda.dto';
 import {
@@ -121,6 +122,19 @@ export class DemandasController {
   @ApiResponse({ status: 200, type: DemandaDetalheDto })
   assumirDemanda(@Param('id') id: string, @CurrentUser() user: Usuario) {
     return this.demandasService.assumirDemanda(id, user);
+  }
+
+  @Patch(':id/atribuir')
+  @ApiOperation({ summary: 'Atribuir responsavel pela demanda' })
+  @ApiParam({ name: 'id', description: 'ID da demanda' })
+  @ApiResponse({ status: 200, type: DemandaDetalheDto })
+  @ApiResponse({ status: 403, description: 'Sem permissao' })
+  atribuirDemanda(
+    @Param('id') id: string,
+    @Body() dto: AtribuirDemandaDto,
+    @CurrentUser() user: Usuario,
+  ) {
+    return this.demandasService.atribuirDemanda(id, dto, user);
   }
 
   @Post(':id/comentarios')

@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CalendarIcon, Loader2, Paperclip, Send } from "lucide-react";
+import { CalendarIcon, Loader2, Send } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -32,7 +32,6 @@ const demandaSchema = z.object({
   descricao: z.string().min(12, "Descreva a demanda com mais detalhes."),
   prioridade: z.enum(["baixa", "media", "alta", "urgente"]),
   prazo: z.string().optional(),
-  anexos: z.instanceof(FileList).optional(),
 });
 
 type DemandaFormValues = z.infer<typeof demandaSchema>;
@@ -185,29 +184,6 @@ export function DemandaForm({ areaId, areaNome }: DemandaFormProps) {
             )}
           />
         </div>
-
-        <FormField
-          control={form.control}
-          name="anexos"
-          render={({ field: { onChange, value: _value, ...field } }) => (
-            <FormItem>
-              <FormLabel>Anexos</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <Paperclip className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="file"
-                    multiple
-                    className="pl-9"
-                    onChange={(event) => onChange(event.target.files ?? undefined)}
-                    {...field}
-                  />
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
 
         <Button type="submit" className="gap-2" disabled={createMutation.isPending || loading}>
           {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}

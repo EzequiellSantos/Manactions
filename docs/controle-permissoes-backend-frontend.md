@@ -97,6 +97,7 @@ Observações de segurança e compatibilidade
 ---
 
 ## Progresso desta etapa
+- :check: Etapa 3/6 concluida: criado `frontend/src/hooks/use-permissions.ts` para mapear `papel`, `areaId` e `recebeDemandas` em permissoes reutilizaveis de UI
 - :check: Adicionado campo `recebeDemandas` em `backend/prisma/schema.prisma`
 - :check: Criado DTO `backend/src/usuarios/dto/admin-update-usuario.dto.ts` para atualização admin
 - :check: Atualizado `backend/src/usuarios/dto/usuario-response.dto.ts` para expor `recebeDemandas`
