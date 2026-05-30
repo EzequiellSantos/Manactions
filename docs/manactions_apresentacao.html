@@ -1,0 +1,852 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+  :root {
+    --brand: #3B5BDB;
+    --brand-hover: #2F4AC0;
+    --secondary: #4C6EF5;
+    --brand-light: rgba(59,91,219,0.10);
+    --brand-lighter: rgba(59,91,219,0.05);
+    --text: #0F172A;
+    --muted: #64748B;
+    --surface: #F8F9FB;
+    --white: #fff;
+    --success: #12B886;
+    --warning: #F59E0B;
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body, #root {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: var(--text);
+    background: var(--surface);
+  }
+
+  #pres {
+    width: 100%;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  .slide {
+    background: var(--white);
+    border: 0.5px solid rgba(15,23,42,0.08);
+    border-radius: 16px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* ── SLIDE 1: CAPA ── */
+  .s1 {
+    background: var(--text);
+    color: var(--white);
+    padding: 40px 36px 36px;
+    min-height: 320px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .s1-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: var(--brand);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+    font-size: 18px;
+  }
+  .logo-text {
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.3px;
+  }
+  .logo-text span { color: var(--secondary); }
+  .s1-main h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.2;
+    margin-bottom: 10px;
+  }
+  .s1-main p {
+    font-size: 14px;
+    color: rgba(255,255,255,0.55);
+    line-height: 1.6;
+    max-width: 460px;
+    margin-bottom: 20px;
+  }
+  .s1-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--brand);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 7px 14px;
+    border-radius: 8px;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+  }
+  .s1-link:hover { background: var(--brand-hover); }
+  .s1-bottom {
+    display: flex;
+    gap: 28px;
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 0.5px solid rgba(255,255,255,0.1);
+  }
+  .s1-tag {
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+  .s1-val {
+    font-size: 13px;
+    color: rgba(255,255,255,0.75);
+    font-weight: 500;
+    margin-top: 2px;
+  }
+
+  /* ── LABEL DE SEÇÃO ── */
+  .section-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--brand);
+    margin-bottom: 4px;
+  }
+
+  /* ── SLIDE: PROBLEMA ── */
+  .s-prob {
+    padding: 28px 32px;
+  }
+  .s-prob h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: var(--text);
+  }
+  .prob-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .prob-card {
+    background: var(--surface);
+    border: 0.5px solid rgba(15,23,42,0.07);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+  .prob-card .icon {
+    font-size: 18px;
+    margin-bottom: 8px;
+  }
+  .prob-card h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .prob-card p {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .prob-highlight {
+    background: rgba(239,68,68,0.06);
+    border: 0.5px solid rgba(239,68,68,0.2);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .prob-highlight p {
+    font-size: 13px;
+    color: #991b1b;
+    font-weight: 500;
+  }
+
+  /* ── SLIDE: SOLUÇÃO ── */
+  .s-sol {
+    padding: 28px 32px;
+  }
+  .s-sol h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
+  .sol-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+  }
+  .sol-card {
+    background: var(--brand-lighter);
+    border: 0.5px solid var(--brand-light);
+    border-radius: var(--radius);
+    padding: 14px;
+    text-align: center;
+  }
+  .sol-card .ic {
+    font-size: 22px;
+    margin-bottom: 8px;
+  }
+  .sol-card h3 {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--brand);
+    margin-bottom: 4px;
+  }
+  .sol-card p {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  /* ── SLIDE: GANHOS ── */
+  .s-gains {
+    padding: 28px 32px;
+  }
+  .s-gains h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
+  .gains-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .gain-card {
+    background: var(--text);
+    border-radius: var(--radius);
+    padding: 16px;
+    text-align: center;
+  }
+  .gain-num {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--secondary);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .gain-label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    line-height: 1.4;
+  }
+  .gain-sub {
+    font-size: 10px;
+    color: rgba(255,255,255,0.28);
+    margin-top: 2px;
+    line-height: 1.3;
+  }
+  .gains-note {
+    background: rgba(18,184,134,0.06);
+    border: 0.5px solid rgba(18,184,134,0.2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .gains-note p {
+    font-size: 12px;
+    color: #065f46;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  /* ── SLIDE: FLUXO ── */
+  .s-flow {
+    padding: 28px 32px;
+  }
+  .s-flow h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
+  .flow-wrap {
+    overflow-x: auto;
+  }
+
+  /* ── SLIDE: STACK ── */
+  .s-stack {
+    padding: 28px 32px;
+  }
+  .s-stack h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
+  .stack-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .stack-item {
+    background: var(--surface);
+    border: 0.5px solid rgba(15,23,42,0.08);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+  }
+  .stack-item .ic {
+    font-size: 20px;
+    margin-bottom: 6px;
+  }
+  .stack-item .name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .stack-item .role {
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .stack-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--brand-light);
+    color: var(--brand);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    margin-right: 6px;
+    margin-top: 4px;
+  }
+
+  /* ── SLIDE: DEMO ── */
+  .s-demo {
+    background: var(--brand);
+    padding: 32px 36px;
+    text-align: center;
+    color: #fff;
+  }
+  .s-demo h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+  .s-demo p {
+    font-size: 13px;
+    color: rgba(255,255,255,0.65);
+    margin-bottom: 20px;
+  }
+  .demo-steps {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  .demo-step {
+    background: rgba(255,255,255,0.12);
+    border: 0.5px solid rgba(255,255,255,0.2);
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.85);
+    font-weight: 500;
+  }
+  .demo-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fff;
+    color: var(--brand);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+  }
+
+  /* ── SLIDE: USUÁRIOS ── */
+  .s-users {
+    padding: 28px 32px;
+  }
+  .s-users h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
+  .roles-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .role-card {
+    border-radius: var(--radius);
+    padding: 16px;
+    border: 0.5px solid rgba(15,23,42,0.07);
+  }
+  .role-badge {
+    display: inline-flex;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    margin-bottom: 10px;
+  }
+  .role-card h3 {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .role-card ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .role-card ul li {
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    align-items: flex-start;
+    gap: 5px;
+    line-height: 1.4;
+  }
+  .role-card ul li::before {
+    content: '›';
+    color: var(--brand);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  /* ── DIVIDER ── */
+  .slide-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 6px 0 2px 4px;
+    opacity: 0.7;
+  }
+</style>
+
+<h2 class="sr-only">Apresentação Manactions — Plataforma de gestão de demandas internas</h2>
+
+<div id="pres">
+
+  <!-- SLIDE 1: CAPA -->
+  <div class="slide s1">
+    <div>
+      <div class="s1-top">
+        <div class="logo-icon"><i class="ti ti-building-community" aria-hidden="true"></i></div>
+        <span class="logo-text">Man<span>actions</span></span>
+      </div>
+      <div class="s1-main">
+        <h1>Gestão de demandas<br>internas centralizada</h1>
+        <p>Uma plataforma que elimina o caos de e-mails, mensagens e reuniões avulsas, reunindo todas as solicitações internas em um único ambiente rastreável.</p>
+        <a class="s1-link" href="https://manactions.vercel.app/" target="_blank">
+          <i class="ti ti-external-link" aria-hidden="true"></i>
+          manactions.vercel.app
+        </a>
+      </div>
+    </div>
+    <div class="s1-bottom">
+      <div><div class="s1-tag">Plataforma</div><div class="s1-val">Intranet corporativa</div></div>
+      <div><div class="s1-tag">Backend</div><div class="s1-val">NestJS + Supabase</div></div>
+      <div><div class="s1-tag">Frontend</div><div class="s1-val">React + TanStack</div></div>
+      <div><div class="s1-tag">Deploy</div><div class="s1-val">Vercel + Railway</div></div>
+    </div>
+  </div>
+
+  <!-- SLIDE 2: PROBLEMA -->
+  <div class="slide s-prob">
+    <div class="section-label">O problema</div>
+    <h2>O jeito atual não funciona</h2>
+    <div class="prob-grid">
+      <div class="prob-card">
+        <div class="icon"><i class="ti ti-mail-off" style="color:#EF4444" aria-hidden="true"></i></div>
+        <h3>Canais dispersos</h3>
+        <p>Solicitações chegam por e-mail, Discord, reuniões e mensagens diretas — sem padrão.</p>
+      </div>
+      <div class="prob-card">
+        <div class="icon"><i class="ti ti-alert-triangle" style="color:#F59E0B" aria-hidden="true"></i></div>
+        <h3>Demandas se perdem</h3>
+        <p>Sem registro centralizado, tarefas atrasam ou somem sem que ninguém perceba.</p>
+      </div>
+      <div class="prob-card">
+        <div class="icon"><i class="ti ti-eye-off" style="color:#3B5BDB" aria-hidden="true"></i></div>
+        <h3>Sem visibilidade</h3>
+        <p>Quem pediu não sabe o andamento. Quem executa não sabe a prioridade.</p>
+      </div>
+      <div class="prob-card">
+        <div class="icon"><i class="ti ti-users-minus" style="color:#8B5CF6" aria-hidden="true"></i></div>
+        <h3>Acompanhamento manual</h3>
+        <p>Cobranças dependem de mensagens individuais e reuniões de alinhamento desnecessárias.</p>
+      </div>
+    </div>
+    <div class="prob-highlight">
+      <i class="ti ti-x" style="color:#EF4444;font-size:16px;flex-shrink:0" aria-hidden="true"></i>
+      <p>Resultado: retrabalho, atrasos e frustração — em todos os times da empresa.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: SOLUÇÃO -->
+  <div class="slide s-sol">
+    <div class="section-label">A solução</div>
+    <h2>Tudo em um único lugar</h2>
+    <div class="sol-grid">
+      <div class="sol-card">
+        <div class="ic"><i class="ti ti-inbox" style="color:var(--brand)" aria-hidden="true"></i></div>
+        <h3>Canal único</h3>
+        <p>Toda solicitação nasce no Manactions, sem fragmentação.</p>
+      </div>
+      <div class="sol-card">
+        <div class="ic"><i class="ti ti-timeline" style="color:var(--brand)" aria-hidden="true"></i></div>
+        <h3>Histórico completo</h3>
+        <p>Cada ação na demanda é registrada com autor e horário.</p>
+      </div>
+      <div class="sol-card">
+        <div class="ic"><i class="ti ti-bell-ringing" style="color:var(--brand)" aria-hidden="true"></i></div>
+        <h3>Notificações reais</h3>
+        <p>Avisos automáticos a cada mudança de status.</p>
+      </div>
+      <div class="sol-card">
+        <div class="ic"><i class="ti ti-user-check" style="color:var(--brand)" aria-hidden="true"></i></div>
+        <h3>Atribuição clara</h3>
+        <p>Responsável definido, visível para todos os envolvidos.</p>
+      </div>
+      <div class="sol-card">
+        <div class="ic"><i class="ti ti-shield-check" style="color:var(--brand)" aria-hidden="true"></i></div>
+        <h3>Permissões</h3>
+        <p>Admin, Gestor e Colaborador com acessos distintos.</p>
+      </div>
+      <div class="sol-card">
+        <div class="ic"><i class="ti ti-book-2" style="color:var(--brand)" aria-hidden="true"></i></div>
+        <h3>Base de processos</h3>
+        <p>Documentação centralizada por área e categoria.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: GANHOS -->
+  <div class="slide s-gains">
+    <div class="section-label">Impacto esperado</div>
+    <h2>Ganhos em tempo e operação</h2>
+    <div class="gains-row">
+      <div class="gain-card">
+        <div class="gain-num">-70%</div>
+        <div class="gain-label">Tempo gasto em cobranças manuais</div>
+        <div class="gain-sub">Status visível em tempo real</div>
+      </div>
+      <div class="gain-card">
+        <div class="gain-num">+40%</div>
+        <div class="gain-label">Velocidade de resposta às demandas</div>
+        <div class="gain-sub">Priorização e triagem automatizadas</div>
+      </div>
+      <div class="gain-card">
+        <div class="gain-num">0</div>
+        <div class="gain-label">Demandas perdidas sem registro</div>
+        <div class="gain-sub">Toda solicitação tem ID e histórico</div>
+      </div>
+    </div>
+    <div class="gains-row" style="margin-top:10px">
+      <div class="gain-card" style="background:var(--brand)">
+        <div class="gain-num" style="font-size:22px;color:#fff">~2h/semana</div>
+        <div class="gain-label">Reuniões de alinhamento evitadas por colaborador</div>
+        <div class="gain-sub">Com visibilidade em tempo real, não é preciso perguntar</div>
+      </div>
+      <div class="gain-card" style="background:var(--brand)">
+        <div class="gain-num" style="font-size:22px;color:#fff">R$ 800–2.400/mês</div>
+        <div class="gain-label">Economia estimada por time de 10 pessoas</div>
+        <div class="gain-sub">2h/semana × R$40/h médio × 4 semanas</div>
+      </div>
+      <div class="gain-card" style="background:var(--brand)">
+        <div class="gain-num" style="font-size:22px;color:#fff">100%</div>
+        <div class="gain-label">Rastreabilidade das solicitações</div>
+        <div class="gain-sub">Auditoria e histórico permanente por demanda</div>
+      </div>
+    </div>
+    <div class="gains-note" style="margin-top:10px">
+      <i class="ti ti-check" style="color:var(--success);font-size:16px;flex-shrink:0" aria-hidden="true"></i>
+      <p>Além do tempo, a plataforma reduz o retrabalho causado por falta de contexto — um dos maiores geradores de custo invisível nas empresas.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: FLUXO -->
+  <div class="slide s-flow">
+    <div class="section-label">Como funciona</div>
+    <h2>Fluxo completo da plataforma</h2>
+    <div class="flow-wrap">
+      <svg width="100%" viewBox="0 0 620 520" role="img">
+        <title>Fluxograma do Manactions</title>
+        <desc>Fluxo desde o cadastro do usuário até a conclusão de uma demanda</desc>
+        <defs>
+          <marker id="arr2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+
+        <!-- COLUNA 1: USUÁRIO -->
+        <text x="60" y="18" text-anchor="middle" font-size="10" font-weight="600" fill="#64748B" font-family="'Plus Jakarta Sans', sans-serif" letter-spacing="0.8">USUÁRIO</text>
+        <!-- box: acesso -->
+        <g>
+          <rect x="10" y="28" width="100" height="38" rx="8" fill="#EEF2FF" stroke="#3B5BDB" stroke-width="0.8"/>
+          <text x="60" y="51" text-anchor="middle" font-size="12" font-weight="600" fill="#3B5BDB" font-family="'Plus Jakarta Sans', sans-serif" dominant-baseline="central">Acesso</text>
+        </g>
+        <!-- seta down -->
+        <line x1="60" y1="66" x2="60" y2="82" stroke="#3B5BDB" stroke-width="1" marker-end="url(#arr2)"/>
+        <!-- box: login supabase -->
+        <g>
+          <rect x="10" y="82" width="100" height="38" rx="8" fill="#EEF2FF" stroke="#3B5BDB" stroke-width="0.8"/>
+          <text x="60" y="101" text-anchor="middle" font-size="11" font-weight="600" fill="#3B5BDB" font-family="'Plus Jakarta Sans', sans-serif" dominant-baseline="central">Login Supabase</text>
+        </g>
+        <!-- seta down -->
+        <line x1="60" y1="120" x2="60" y2="136" stroke="#3B5BDB" stroke-width="1" marker-end="url(#arr2)"/>
+        <!-- box: dashboard -->
+        <g>
+          <rect x="10" y="136" width="100" height="38" rx="8" fill="#0F172A" stroke="#3B5BDB" stroke-width="0.8"/>
+          <text x="60" y="155" text-anchor="middle" font-size="11" font-weight="600" fill="#fff" font-family="'Plus Jakarta Sans', sans-serif" dominant-baseline="central">Dashboard</text>
+        </g>
+        <!-- seta down -->
+        <line x1="60" y1="174" x2="60" y2="190" stroke="#64748B" stroke-width="1" marker-end="url(#arr2)"/>
+        <!-- box: abrir demanda -->
+        <g>
+          <rect x="10" y="190" width="100" height="38" rx="8" fill="#EEF2FF" stroke="#3B5BDB" stroke-width="0.8"/>
+          <text x="60" y="205" text-anchor="middle" font-size="10" font-weight="600" fill="#3B5BDB" font-family="'Plus Jakarta Sans', sans-serif">Seleciona</text>
+          <text x="60" y="219" text-anchor="middle" font-size="10" font-weight="600" fill="#3B5BDB" font-family="'Plus Jakarta Sans', sans-serif">a área</text>
+        </g>
+        <!-- seta down -->
+        <line x1="60" y1="228" x2="60" y2="244" stroke="#64748B" stroke-width="1" marker-end="url(#arr2)"/>
+        <!-- box: preenche demanda -->
+        <g>
+          <rect x="10" y="244" width="100" height="48" rx="8" fill="#EEF2FF" stroke="#3B5BDB" stroke-width="0.8"/>
+          <text x="60" y="260" text-anchor="middle" font-size="10" font-weight="600" fill="#3B5BDB" font-family="'Plus Jakarta Sans', sans-serif">Preenche</text>
+          <text x="60" y="274" text-anchor="middle" font-size="10" fill="#3B5BDB" font-family="'Plus Jakarta Sans', sans-serif">título, desc,</text>
+          <text x="60" y="285" text-anchor="middle" font-size="10" fill="#3B5BDB" font-family="'Plus Jakarta Sans', sans-serif">prioridade</text>
+        </g>
+        <!-- seta down para notif -->
+        <line x1="60" y1="292" x2="60" y2="308" stroke="#64748B" stroke-width="1" marker-end="url(#arr2)"/>
+        <!-- box: acompanha -->
+        <g>
+          <rect x="10" y="308" width="100" height="38" rx="8" fill="#E0FDF4" stroke="#12B886" stroke-width="0.8"/>
+          <text x="60" y="323" text-anchor="middle" font-size="10" font-weight="600" fill="#065f46" font-family="'Plus Jakarta Sans', sans-serif">Acompanha</text>
+          <text x="60" y="335" text-anchor="middle" font-size="10" fill="#065f46" font-family="'Plus Jakarta Sans', sans-serif">+ notificações</text>
+        </g>
+
+        <!-- COLUNA 2: BACKEND / ADMIN -->
+        <text x="330" y="18" text-anchor="middle" font-size="10" font-weight="600" fill="#64748B" font-family="'Plus Jakarta Sans', sans-serif" letter-spacing="0.8">SISTEMA / ADMIN</text>
+        <!-- box: valida jwt -->
+        <g>
+          <rect x="260" y="82" width="140" height="38" rx="8" fill="#F1F5F9" stroke="#94A3B8" stroke-width="0.8"/>
+          <text x="330" y="98" text-anchor="middle" font-size="11" font-weight="600" fill="#334155" font-family="'Plus Jakarta Sans', sans-serif">Valida JWT</text>
+          <text x="330" y="111" text-anchor="middle" font-size="10" fill="#64748B" font-family="'Plus Jakarta Sans', sans-serif">Cria usuário se novo</text>
+        </g>
+        <!-- box: permissões -->
+        <g>
+          <rect x="260" y="156" width="140" height="38" rx="8" fill="#F1F5F9" stroke="#94A3B8" stroke-width="0.8"/>
+          <text x="330" y="172" text-anchor="middle" font-size="11" font-weight="600" fill="#334155" font-family="'Plus Jakarta Sans', sans-serif">Aplica permissões</text>
+          <text x="330" y="185" text-anchor="middle" font-size="10" fill="#64748B" font-family="'Plus Jakarta Sans', sans-serif">Admin / Gestor / Colab.</text>
+        </g>
+        <!-- box: recebe demanda -->
+        <g>
+          <rect x="260" y="258" width="140" height="38" rx="8" fill="#F1F5F9" stroke="#94A3B8" stroke-width="0.8"/>
+          <text x="330" y="274" text-anchor="middle" font-size="11" font-weight="600" fill="#334155" font-family="'Plus Jakarta Sans', sans-serif">Registra demanda</text>
+          <text x="330" y="287" text-anchor="middle" font-size="10" fill="#64748B" font-family="'Plus Jakarta Sans', sans-serif">Histórico + notif.</text>
+        </g>
+        <!-- box: triagem admin -->
+        <g>
+          <rect x="260" y="330" width="140" height="48" rx="8" fill="#FFF7ED" stroke="#F59E0B" stroke-width="0.8"/>
+          <text x="330" y="346" text-anchor="middle" font-size="11" font-weight="600" fill="#92400e" font-family="'Plus Jakarta Sans', sans-serif">Triagem (Gestor)</text>
+          <text x="330" y="360" text-anchor="middle" font-size="10" fill="#92400e" font-family="'Plus Jakarta Sans', sans-serif">Atribui responsável</text>
+          <text x="330" y="372" text-anchor="middle" font-size="10" fill="#92400e" font-family="'Plus Jakarta Sans', sans-serif">recebeDemandas=true</text>
+        </g>
+        <!-- box: execução -->
+        <g>
+          <rect x="260" y="414" width="140" height="38" rx="8" fill="#EEF2FF" stroke="#3B5BDB" stroke-width="0.8"/>
+          <text x="330" y="430" text-anchor="middle" font-size="11" font-weight="600" fill="#3B5BDB" font-family="'Plus Jakarta Sans', sans-serif">Execução</text>
+          <text x="330" y="443" text-anchor="middle" font-size="10" fill="#3B5BDB" font-family="'Plus Jakarta Sans', sans-serif">Status + comentários</text>
+        </g>
+
+        <!-- COLUNA 3: CONCLUSÃO -->
+        <text x="550" y="18" text-anchor="middle" font-size="10" font-weight="600" fill="#64748B" font-family="'Plus Jakarta Sans', sans-serif" letter-spacing="0.8">CONCLUSÃO</text>
+        <!-- box: concluída -->
+        <g>
+          <rect x="490" y="414" width="120" height="38" rx="8" fill="#E0FDF4" stroke="#12B886" stroke-width="1.2"/>
+          <text x="550" y="430" text-anchor="middle" font-size="11" font-weight="600" fill="#065f46" font-family="'Plus Jakarta Sans', sans-serif">Concluída</text>
+          <text x="550" y="443" text-anchor="middle" font-size="10" fill="#065f46" font-family="'Plus Jakarta Sans', sans-serif">Historico salvo</text>
+        </g>
+
+        <!-- SETAS HORIZONTAIS -->
+        <!-- login → valida jwt -->
+        <line x1="110" y1="101" x2="258" y2="101" stroke="#3B5BDB" stroke-width="1" marker-end="url(#arr2)" stroke-dasharray="4 3"/>
+        <!-- dashboard → permissões -->
+        <line x1="110" y1="175" x2="258" y2="175" stroke="#94A3B8" stroke-width="1" marker-end="url(#arr2)" stroke-dasharray="4 3"/>
+        <!-- preenche → registra -->
+        <line x1="110" y1="270" x2="258" y2="270" stroke="#3B5BDB" stroke-width="1.2" marker-end="url(#arr2)"/>
+        <!-- acompanha → triagem -->
+        <line x1="110" y1="327" x2="258" y2="345" stroke="#12B886" stroke-width="1" marker-end="url(#arr2)" stroke-dasharray="4 3"/>
+
+        <!-- SETAS VERTICAIS COLUNA 2 -->
+        <line x1="330" y1="120" x2="330" y2="154" stroke="#94A3B8" stroke-width="1" marker-end="url(#arr2)"/>
+        <line x1="330" y1="194" x2="330" y2="256" stroke="#94A3B8" stroke-width="1" marker-end="url(#arr2)"/>
+        <line x1="330" y1="296" x2="330" y2="328" stroke="#94A3B8" stroke-width="1" marker-end="url(#arr2)"/>
+        <line x1="330" y1="378" x2="330" y2="412" stroke="#F59E0B" stroke-width="1" marker-end="url(#arr2)"/>
+
+        <!-- seta execução → concluída -->
+        <line x1="400" y1="433" x2="488" y2="433" stroke="#3B5BDB" stroke-width="1.2" marker-end="url(#arr2)"/>
+
+        <!-- LEGENDA -->
+        <line x1="20" y1="470" x2="50" y2="470" stroke="#3B5BDB" stroke-width="1.5"/>
+        <text x="55" y="474" font-size="10" fill="#64748B" font-family="'Plus Jakarta Sans', sans-serif">Fluxo principal</text>
+        <line x1="140" y1="470" x2="170" y2="470" stroke="#94A3B8" stroke-width="1" stroke-dasharray="4 3"/>
+        <text x="175" y="474" font-size="10" fill="#64748B" font-family="'Plus Jakarta Sans', sans-serif">Integração sistema</text>
+        <rect x="280" y="464" width="12" height="12" rx="3" fill="#FFF7ED" stroke="#F59E0B" stroke-width="0.8"/>
+        <text x="296" y="474" font-size="10" fill="#64748B" font-family="'Plus Jakarta Sans', sans-serif">Triagem / Gestão</text>
+        <rect x="400" y="464" width="12" height="12" rx="3" fill="#E0FDF4" stroke="#12B886" stroke-width="0.8"/>
+        <text x="416" y="474" font-size="10" fill="#64748B" font-family="'Plus Jakarta Sans', sans-serif">Sucesso / Conclusão</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- SLIDE 6: NÍVEIS DE USUÁRIO -->
+  <div class="slide s-users">
+    <div class="section-label">Controle de acesso</div>
+    <h2>Três níveis de permissão</h2>
+    <div class="roles-grid">
+      <div class="role-card" style="background:#FFF7ED;border-color:rgba(245,158,11,0.2)">
+        <span class="role-badge" style="background:rgba(245,158,11,0.12);color:#92400e">Admin</span>
+        <h3 style="color:#92400e">Administrador</h3>
+        <ul>
+          <li>Gerencia usuários e papéis</li>
+          <li>Configura áreas e categorias</li>
+          <li>Acessa todas as demandas</li>
+          <li>Publica processos internos</li>
+          <li>Define quem recebe demandas</li>
+        </ul>
+      </div>
+      <div class="role-card" style="background:#EEF2FF;border-color:rgba(59,91,219,0.2)">
+        <span class="role-badge" style="background:rgba(59,91,219,0.10);color:#3B5BDB">Gestor</span>
+        <h3 style="color:#1E3A8A">Gestor de Área</h3>
+        <ul>
+          <li>Visualiza demandas da sua área</li>
+          <li>Triagem e atribuição de responsável</li>
+          <li>Altera status das demandas</li>
+          <li>Gerencia processos da área</li>
+          <li>Recebe notificações da área</li>
+        </ul>
+      </div>
+      <div class="role-card" style="background:#F0FDF4;border-color:rgba(18,184,134,0.2)">
+        <span class="role-badge" style="background:rgba(18,184,134,0.10);color:#065f46">Colaborador</span>
+        <h3 style="color:#065f46">Colaborador</h3>
+        <ul>
+          <li>Abre solicitações para qualquer área</li>
+          <li>Acompanha suas próprias demandas</li>
+          <li>Comenta nas demandas abertas</li>
+          <li>Acessa base de processos</li>
+          <li>Recebe notificações pessoais</li>
+        </ul>
+      </div>
+    </div>
+    <div style="margin-top:12px;background:var(--surface);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px">
+      <i class="ti ti-info-circle" style="color:var(--brand);font-size:14px" aria-hidden="true"></i>
+      <span>A flag <strong style="color:var(--text)">recebeDemandas</strong> define quem pode ser atribuído como responsável — independente do papel.</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 7: STACK -->
+  <div class="slide s-stack">
+    <div class="section-label">Tecnologias</div>
+    <h2>Stack utilizada</h2>
+    <div class="stack-grid">
+      <div class="stack-item">
+        <div class="ic"><i class="ti ti-brand-react" style="color:#61DAFB" aria-hidden="true"></i></div>
+        <div class="name">React + TanStack</div>
+        <div class="role">Frontend</div>
+      </div>
+      <div class="stack-item">
+        <div class="ic"><i class="ti ti-brand-typescript" style="color:#3178C6" aria-hidden="true"></i></div>
+        <div class="name">TypeScript</div>
+        <div class="role">Linguagem</div>
+      </div>
+      <div class="stack-item">
+        <div class="ic"><i class="ti ti-server" style="color:#E0234E" aria-hidden="true"></i></div>
+        <div class="name">NestJS</div>
+        <div class="role">Backend</div>
+      </div>
+      <div class="stack-item">
+        <div class="ic"><i class="ti ti-database" style="color:#3ECF8E" aria-hidden="true"></i></div>
+        <div class="name">Supabase</div>
+        <div class="role">Banco + Auth + Realtime</div>
+      </div>
+      <div class="stack-item">
+        <div class="ic"><i class="ti ti-layers-intersect" style="color:#2D3748" aria-hidden="true"></i></div>
+        <div class="name">Prisma ORM</div>
+        <div class="role">Modelagem de dados</div>
+      </div>
+      <div class="stack-item">
+        <div class="ic"><i class="ti ti-brand-vercel" style="color:#000" aria-hidden="true"></i></div>
+        <div class="name">Vercel</div>
+        <div class="role">Deploy frontend</div>
+      </div>
+      <div class="stack-item">
+        <div class="ic"><i class="ti ti-train" style="color:#7C3AED" aria-hidden="true"></i></div>
+        <div class="name">Railway</div>
+        <div class="role">Deploy backend</div>
+      </div>
+      <div class="stack-item">
+        <div class="ic"><i class="ti ti-mail-forward" style="color:#3B5BDB" aria-hidden="true"></i></div>
+        <div class="name">Resend</div>
+        <div class="role">E-mails automáticos</div>
+      </div>
+    </div>
+    <div style="margin-top:10px">
+      <span class="stack-tag"><i class="ti ti-shield-lock" style="font-size:11px" aria-hidden="true"></i> JWT Guard</span>
+      <span class="stack-tag"><i class="ti ti-lock" style="font-size:11px" aria-hidden="true"></i> RLS Supabase</span>
+      <span class="stack-tag"><i class="ti ti-refresh" style="font-size:11px" aria-hidden="true"></i> Realtime</span>
+      <span class="stack-tag"><i class="ti ti-api" style="font-size:11px" aria-hidden="true"></i> Swagger docs</span>
+      <span class="stack-tag"><i class="ti ti-activity" style="font-size:11px" aria-hidden="true"></i> Rate limiting</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 8: DEMO CTA -->
+  <div class="slide s-demo">
+    <h2>Veja funcionando ao vivo</h2>
+    <p>Acesse a plataforma e explore enquanto apresentamos o fluxo completo</p>
+    <div class="demo-steps">
+      <span class="demo-step">1. Login</span>
+      <span class="demo-step">2. Dashboard</span>
+      <span class="demo-step">3. Áreas</span>
+      <span class="demo-step">4. Nova demanda</span>
+      <span class="demo-step">5. Triagem</span>
+      <span class="demo-step">6. Histórico</span>
+    </div>
+    <a class="demo-btn" href="https://manactions.vercel.app/" target="_blank">
+      <i class="ti ti-external-link" aria-hidden="true"></i>
+      Abrir Manactions
+    </a>
+  </div>
+
+</div>
