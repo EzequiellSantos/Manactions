@@ -83,7 +83,7 @@ function AdminConfiguracoesPage() {
   const [userDraft, setUserDraft] = useState<UserDraft>({
     papel: "COLABORADOR",
     areaId: NO_AREA_VALUE,
-    recebeDemandas: true,
+    recebeDemandas: false,
   });
   const [areaDraft, setAreaDraft] = useState<AreaDraft>({
     nome: "",

@@ -136,6 +136,7 @@ async function main() {
         cargo: 'Gestor de Área',
         departamento: areaData.nome,
         papel: Papel.GESTOR,
+        recebeDemandas: true,
       },
     });
 
