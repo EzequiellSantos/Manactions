@@ -47,7 +47,10 @@ export class DashboardService {
         },
       }),
       this.prisma.demanda.count({
-        where: { status: StatusDemanda.EM_ANALISE },
+        where: {
+          solicitanteId: usuarioLogado.id,
+          status: StatusDemanda.EM_ANALISE,
+        },
       }),
       this.prisma.processo.count({
         where: {

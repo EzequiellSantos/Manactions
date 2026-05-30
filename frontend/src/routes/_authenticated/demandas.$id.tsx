@@ -426,13 +426,6 @@ function DemandaDetailPage() {
             </div>
           </section>
 
-          <section className="rounded-xl border border-border bg-card p-5 shadow-soft">
-            <h2 className="flex items-center gap-2 font-display text-base font-semibold">
-              <CalendarClock className="h-4 w-4" />
-              Prazos
-            </h2>
-            <p className="mt-3 text-sm text-muted-foreground">O prazo solicitado vem de quem abriu a demanda. O prazo de resolucao e definido pelo responsavel durante o atendimento.</p>
-          </section>
         </aside>
       </div>
     </div>

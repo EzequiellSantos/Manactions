@@ -197,7 +197,7 @@ function DashboardPage() {
                 {demandasRecentes.length === 0 && (
                   <tr>
                     <td className="px-4 py-6 text-sm text-muted-foreground" colSpan={4}>
-                      Nenhuma demanda recente retornada pelo backend.
+                      Nenhuma demanda recente encontrada
                     </td>
                   </tr>
                 )}
@@ -239,7 +239,7 @@ function DashboardPage() {
             ))}
             {comunicados.length === 0 && (
               <article className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground shadow-soft">
-                Nenhum comunicado retornado pelo backend.
+                Nenhum comunicado encontrado.
               </article>
             )}
           </div>
