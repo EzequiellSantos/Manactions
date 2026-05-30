@@ -45,11 +45,11 @@ function AreaDetailPage() {
       </Button>
 
       <Tabs defaultValue="visao-geral" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 md:w-auto md:inline-grid md:grid-cols-4">
-          <TabsTrigger value="visao-geral">Visão Geral</TabsTrigger>
-          <TabsTrigger value="responsaveis">Responsáveis</TabsTrigger>
-          <TabsTrigger value="processos">Processos</TabsTrigger>
-          <TabsTrigger value="demanda">Abrir Demanda</TabsTrigger>
+        <TabsList className="flex h-auto w-full justify-start gap-2 overflow-x-auto rounded-xl p-1.5 md:inline-flex md:w-auto">
+          <TabsTrigger value="visao-geral" className="min-w-max px-4 py-2">Visão Geral</TabsTrigger>
+          <TabsTrigger value="responsaveis" className="min-w-max px-4 py-2">Responsáveis</TabsTrigger>
+          <TabsTrigger value="processos" className="min-w-max px-4 py-2">Processos</TabsTrigger>
+          <TabsTrigger value="demanda" className="min-w-max px-4 py-2">Abrir Demanda</TabsTrigger>
         </TabsList>
 
         <TabsContent value="visao-geral" className="space-y-6">
@@ -131,9 +131,11 @@ function AreaDetailPage() {
                   <h3 className="mt-1 font-display text-base font-semibold">{processo.titulo}</h3>
                   <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{processo.descricao}</p>
                 </div>
-                <Button type="button" variant="outline" className="gap-2 sm:shrink-0">
-                  Ver Processo
-                  <ArrowRight className="h-4 w-4" />
+                <Button asChild variant="outline" className="gap-2 sm:shrink-0">
+                  <Link to="/processos/$id" params={{ id: processo.id }}>
+                    Ver Processo
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
                 </Button>
               </article>
             ))}

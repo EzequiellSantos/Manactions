@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import {
   getNotifications,
   markAllNotificationsAsRead,
+  markNotificationAsRead,
   relativeNotificationTime,
 } from "@/lib/backend/notifications";
 
@@ -16,6 +17,7 @@ export interface AppNotification {
   read: boolean;
   type: "demanda" | "aviso" | "processo";
   createdAt: Date;
+  link?: string;
 }
 
 export function useNotifications() {
@@ -60,6 +62,16 @@ export function useNotifications() {
     },
   });
 
+  const markOneMutation = useMutation({
+    mutationFn: markNotificationAsRead,
+    onMutate: (id) => {
+      setItems((current) => current.map((item) => item.id === id ? { ...item, read: true } : item));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+
   const data = useMemo(
     () =>
       items
@@ -73,5 +85,6 @@ export function useNotifications() {
     ...query,
     data,
     markAllAsRead: () => markAllMutation.mutate(),
+    markAsRead: (id: string) => markOneMutation.mutateAsync(id),
   };
 }

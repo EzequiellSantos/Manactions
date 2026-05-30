@@ -10,11 +10,17 @@ export interface BackendUserListItem {
   papel: string;
   ativo: boolean;
   areaId?: string;
+  recebeDemandas: boolean;
   area?: {
     id: string;
     nome: string;
     slug?: string;
   };
+}
+
+export interface AdminUpdateUserPayload {
+  areaId?: string | null;
+  recebeDemandas?: boolean;
 }
 
 export async function getUsers(): Promise<BackendUserListItem[]> {
@@ -29,5 +35,12 @@ export async function updateUserRole(id: string, papel: "ADMIN" | "GESTOR" | "CO
   return apiFetch<BackendUserListItem>(`/usuarios/${id}/papel`, {
     method: "PATCH",
     body: JSON.stringify({ papel }),
+  });
+}
+
+export async function updateUserAdmin(id: string, payload: AdminUpdateUserPayload): Promise<BackendUserListItem> {
+  return apiFetch<BackendUserListItem>(`/usuarios/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
   });
 }

@@ -110,7 +110,8 @@ export class ProcessosService {
 
   async create(dto: CreateProcessoDto, autorId: string) {
     await this.ensureAreaExists(dto.areaId);
-    await this.ensureUsuarioExists(autorId);
+    const autor = await this.ensureUsuarioExists(autorId);
+    this.ensureCanManageArea(autor, dto.areaId);
 
     const slug = await this.resolveSlug(dto.titulo);
 
@@ -130,12 +131,19 @@ export class ProcessosService {
   }
 
   async update(id: string, dto: UpdateProcessoDto, usuarioId: string) {
-    await this.ensureUsuarioExists(usuarioId);
+    const usuario = await this.ensureUsuarioExists(usuarioId);
 
     const existing = await this.prisma.processo.findUnique({ where: { id } });
 
     if (!existing) {
       throw new NotFoundException(`Processo "${id}" não encontrado`);
+    }
+
+    this.ensureCanManageArea(usuario, existing.areaId);
+
+    if (dto.areaId !== undefined) {
+      await this.ensureAreaExists(dto.areaId);
+      this.ensureCanManageArea(usuario, dto.areaId);
     }
 
     const slug =
@@ -285,6 +293,25 @@ export class ProcessosService {
     if (!usuario) {
       throw new NotFoundException(`Usuário "${usuarioId}" não encontrado`);
     }
+
+    return usuario;
+  }
+
+  private ensureCanManageArea(
+    usuario: Usuario,
+    areaId: string,
+  ) {
+    if (usuario.papel === Papel.ADMIN) {
+      return;
+    }
+
+    if (usuario.papel === Papel.GESTOR && usuario.areaId === areaId) {
+      return;
+    }
+
+    throw new ForbiddenException(
+      'Você só pode gerenciar processos da sua área',
+    );
   }
 
   private async ensureAdmin(adminId: string) {

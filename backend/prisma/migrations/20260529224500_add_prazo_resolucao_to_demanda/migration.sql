@@ -1,0 +1,2 @@
+ALTER TABLE "Demanda"
+ADD COLUMN IF NOT EXISTS "prazoResolucao" TIMESTAMP(3);

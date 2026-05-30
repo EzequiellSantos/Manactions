@@ -40,9 +40,17 @@ export class DashboardService {
       comunicados,
     ] = await Promise.all([
       this.prisma.area.count({ where: { ativo: true } }),
-      this.prisma.demanda.count({ where: { status: StatusDemanda.ABERTA } }),
       this.prisma.demanda.count({
-        where: { status: StatusDemanda.EM_ANALISE },
+        where: {
+          solicitanteId: usuarioLogado.id,
+          status: StatusDemanda.ABERTA,
+        },
+      }),
+      this.prisma.demanda.count({
+        where: {
+          solicitanteId: usuarioLogado.id,
+          status: StatusDemanda.EM_ANALISE,
+        },
       }),
       this.prisma.processo.count({
         where: {

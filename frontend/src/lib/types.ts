@@ -94,6 +94,7 @@ export interface Demanda {
   solicitanteId: string;
   responsavelId?: string;
   prazo?: Date;
+  prazoResolucao?: Date;
   criadaEm: Date;
   atualizadaEm: Date;
   tags?: string[];

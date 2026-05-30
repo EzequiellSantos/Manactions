@@ -23,6 +23,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { UpdatePapelDto } from './dto/update-papel.dto';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
+import { AdminUpdateUsuarioDto } from './dto/admin-update-usuario.dto';
 import { UsuarioFiltrosDto } from './dto/usuario-filtros.dto';
 import {
   UsuarioDetalheDto,
@@ -73,6 +74,21 @@ export class UsuariosController {
   @ApiResponse({ status: 200, type: UsuarioDetalheDto })
   updateMe(@CurrentUser() user: Usuario, @Body() dto: UpdateUsuarioDto) {
     return this.usuariosService.update(user.id, dto, user.id);
+  }
+
+  @Patch(':id')
+  @UseGuards(RolesGuard)
+  @Roles(Papel.ADMIN)
+  @ApiOperation({ summary: 'Atualizar usuário (admin)' })
+  @ApiParam({ name: 'id', description: 'ID do usuário' })
+  @ApiResponse({ status: 200, type: UsuarioDetalheDto })
+  @ApiResponse({ status: 403, description: 'Sem permissão' })
+  updateUsuario(
+    @Param('id') id: string,
+    @Body() dto: AdminUpdateUsuarioDto,
+    @CurrentUser() user: Usuario,
+  ) {
+    return this.usuariosService.updateByAdmin(id, dto, user.id);
   }
 
   @Patch(':id/papel')

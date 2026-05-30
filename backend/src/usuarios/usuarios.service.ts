@@ -80,6 +80,24 @@ export class UsuariosService {
     });
   }
 
+  async updateByAdmin(
+    id: string,
+    dto: { areaId?: string | null; recebeDemandas?: boolean },
+    adminId: string,
+  ) {
+    await this.ensureAdmin(adminId);
+    await this.findById(id);
+
+    return this.prisma.usuario.update({
+      where: { id },
+      data: {
+        ...(dto.areaId !== undefined && { areaId: dto.areaId }),
+        ...(dto.recebeDemandas !== undefined && { recebeDemandas: dto.recebeDemandas }),
+      },
+      include: usuarioInclude,
+    });
+  }
+
   async desativar(id: string, adminId: string) {
     await this.ensureAdmin(adminId);
     await this.findById(id);
