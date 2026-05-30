@@ -198,9 +198,13 @@ export class DemandasService {
       usuarioLogado.papel === Papel.ADMIN ||
       (demanda.solicitanteId === usuarioLogado.id &&
         demanda.status === StatusDemanda.ABERTA);
-    const podeEditarPrazo = demanda.responsavelId === usuarioLogado.id;
+    const podeGerirAtendimento =
+      demanda.responsavelId === usuarioLogado.id ||
+      usuarioLogado.papel === Papel.ADMIN ||
+      (usuarioLogado.papel === Papel.GESTOR &&
+        usuarioLogado.areaId === demanda.areaId);
 
-    if (!podeEditarCompleto && !podeEditarPrazo) {
+    if (!podeEditarCompleto && !podeGerirAtendimento) {
       throw new ForbiddenException(
         'Somente o solicitante (com demanda aberta), responsável ou admin pode editar',
       );
@@ -213,7 +217,8 @@ export class DemandasService {
         ...(podeEditarCompleto && dto.descricao !== undefined && { descricao: dto.descricao }),
         ...(podeEditarCompleto && dto.prioridade !== undefined && { prioridade: dto.prioridade }),
         ...(podeEditarCompleto && dto.tags !== undefined && { tags: dto.tags }),
-        ...(dto.prazo !== undefined && { prazo: new Date(dto.prazo) }),
+        ...(podeEditarCompleto && dto.prazo !== undefined && { prazo: new Date(dto.prazo) }),
+        ...(podeGerirAtendimento && dto.prazoResolucao !== undefined && { prazoResolucao: new Date(dto.prazoResolucao) }),
       },
       include: demandaDetailInclude,
     });
