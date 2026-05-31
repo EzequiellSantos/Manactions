@@ -10,6 +10,11 @@ import {
   renderEmailTemplate,
 } from './email-templates';
 
+export interface EmailSendResult {
+  success: boolean;
+  error?: string;
+}
+
 @Injectable()
 export class NotificacoesService {
   private readonly logger = new Logger(NotificacoesService.name);
@@ -68,10 +73,11 @@ export class NotificacoesService {
     para: string,
     assunto: string,
     html: string,
-  ): Promise<boolean> {
+  ): Promise<EmailSendResult> {
     if (!this.resend) {
-      this.logger.warn('RESEND_API_KEY nao configurada - e-mail nao enviado');
-      return false;
+      const error = 'RESEND_API_KEY nao configurada - e-mail nao enviado';
+      this.logger.warn(error);
+      return { success: false, error };
     }
 
     try {
@@ -82,16 +88,23 @@ export class NotificacoesService {
         html,
       });
       if (result.error) {
+        const error = this.formatResendError(result.error.message);
         this.logger.error(
           `Resend recusou e-mail para ${para}: ${result.error.message}`,
           result.error,
         );
-        return false;
+        return { success: false, error };
       }
-      return true;
+      return { success: true };
     } catch (error) {
       this.logger.error(`Falha ao enviar e-mail para ${para}`, error);
-      return false;
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? this.formatResendError(error.message)
+            : 'Falha desconhecida ao enviar e-mail',
+      };
     }
   }
 
@@ -99,7 +112,7 @@ export class NotificacoesService {
     para: string,
     tipo: EmailTemplateTipo,
     data: Parameters<typeof renderEmailTemplate>[1],
-  ): Promise<boolean> {
+  ): Promise<EmailSendResult> {
     const html = renderEmailTemplate(tipo, data);
     const subject = getEmailSubject(tipo, data.demandaTitulo);
     return this.enviarEmail(para, subject, html);
@@ -145,6 +158,21 @@ export class NotificacoesService {
     return this.prisma.notificacao.count({
       where: { usuarioId, lida: false },
     });
+  }
+
+  private formatResendError(message: string): string {
+    if (
+      this.emailFrom.includes('@resend.dev') ||
+      message.toLowerCase().includes('verify a domain')
+    ) {
+      return [
+        'O Resend esta usando o remetente de testes onboarding@resend.dev.',
+        'Esse remetente so envia para o e-mail da propria conta Resend.',
+        'Para enviar para outros usuarios, verifique um dominio no Resend e configure RESEND_FROM com um e-mail desse dominio, por exemplo: Manactions <noreply@seudominio.com>.',
+      ].join(' ');
+    }
+
+    return message;
   }
 
   private async broadcastRealtime(

@@ -63,8 +63,11 @@ npx prisma db seed
 | `JWT_SECRET` | Secret para tokens internos do backend |
 | `JWT_EXPIRES_IN` | Expiração dos tokens internos (ex: `7d`) |
 | `RESEND_API_KEY` | API key do Resend para envio de e-mails |
+| `RESEND_FROM` | Remetente dos e-mails. Para enviar para outros usuários, use um e-mail de domínio verificado no Resend, ex: `Manactions <noreply@seudominio.com>` |
 | `FRONTEND_URL` | URL do frontend (CORS), ex: `http://localhost:8080` |
 | `PORT` | Porta da API (padrão: `3000`) |
+
+> O remetente `onboarding@resend.dev` é apenas para testes e, por regra do Resend, só envia para o e-mail da própria conta Resend. Para enviar para qualquer outro destinatário, adicione e verifique um domínio no Resend e atualize `RESEND_FROM`.
 
 ## Desenvolvimento
 

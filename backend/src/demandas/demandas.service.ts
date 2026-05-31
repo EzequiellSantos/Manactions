@@ -210,17 +210,58 @@ export class DemandasService {
       );
     }
 
-    return this.prisma.demanda.update({
-      where: { id },
-      data: {
-        ...(podeEditarCompleto && dto.titulo !== undefined && { titulo: dto.titulo }),
-        ...(podeEditarCompleto && dto.descricao !== undefined && { descricao: dto.descricao }),
-        ...(podeEditarCompleto && dto.prioridade !== undefined && { prioridade: dto.prioridade }),
-        ...(podeEditarCompleto && dto.tags !== undefined && { tags: dto.tags }),
-        ...(podeEditarCompleto && dto.prazo !== undefined && { prazo: new Date(dto.prazo) }),
-        ...(podeGerirAtendimento && dto.prazoResolucao !== undefined && { prazoResolucao: new Date(dto.prazoResolucao) }),
-      },
-      include: demandaDetailInclude,
+    const data: Prisma.DemandaUpdateInput = {
+      ...(podeEditarCompleto && dto.titulo !== undefined && { titulo: dto.titulo }),
+      ...(podeEditarCompleto && dto.descricao !== undefined && { descricao: dto.descricao }),
+      ...(podeEditarCompleto && dto.prioridade !== undefined && { prioridade: dto.prioridade }),
+      ...(podeEditarCompleto && dto.tags !== undefined && { tags: dto.tags }),
+      ...(podeEditarCompleto && dto.prazo !== undefined && { prazo: new Date(dto.prazo) }),
+      ...(podeGerirAtendimento && dto.prazoResolucao !== undefined && { prazoResolucao: new Date(dto.prazoResolucao) }),
+    };
+
+    const alteracoes = this.getAlteracoesDemanda(demanda, dto, {
+      podeEditarCompleto,
+      podeGerirAtendimento,
+    });
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.demanda.update({
+        where: { id },
+        data,
+      });
+
+      if (alteracoes.length > 0) {
+        await tx.historicoEvento.create({
+          data: {
+            tipo: 'DEMANDA_EDITADA',
+            descricao: `Demanda editada por ${usuarioLogado.nome}: ${alteracoes
+              .map((alteracao) => alteracao.label)
+              .join(', ')}`,
+            demandaId: id,
+            autorId: usuarioLogado.id,
+            metadados: {
+              camposAlterados: alteracoes.map((alteracao) => alteracao.campo),
+              antes: Object.fromEntries(
+                alteracoes.map((alteracao) => [
+                  alteracao.campo,
+                  alteracao.antes,
+                ]),
+              ),
+              depois: Object.fromEntries(
+                alteracoes.map((alteracao) => [
+                  alteracao.campo,
+                  alteracao.depois,
+                ]),
+              ),
+            },
+          },
+        });
+      }
+
+      return tx.demanda.findUniqueOrThrow({
+        where: { id },
+        include: demandaDetailInclude,
+      });
     });
   }
 
@@ -571,6 +612,109 @@ export class DemandasService {
         ...(Object.keys(dateFilter).length > 0 ? [dateFilter] : []),
       ],
     };
+  }
+
+  private getAlteracoesDemanda(
+    demanda: {
+      titulo: string;
+      descricao: string;
+      prioridade: string;
+      tags: string[];
+      prazo: Date | null;
+      prazoResolucao: Date | null;
+    },
+    dto: UpdateDemandaDto,
+    permissoes: {
+      podeEditarCompleto: boolean;
+      podeGerirAtendimento: boolean;
+    },
+  ) {
+    const alteracoes: Array<{
+      campo: string;
+      label: string;
+      antes: Prisma.InputJsonValue | null;
+      depois: Prisma.InputJsonValue | null;
+    }> = [];
+
+    const addAlteracao = (
+      campo: string,
+      label: string,
+      antes: Prisma.InputJsonValue | null,
+      depois: Prisma.InputJsonValue | null,
+    ) => {
+      alteracoes.push({ campo, label, antes, depois });
+    };
+
+    if (
+      permissoes.podeEditarCompleto &&
+      dto.titulo !== undefined &&
+      dto.titulo !== demanda.titulo
+    ) {
+      addAlteracao('titulo', 'titulo', demanda.titulo, dto.titulo);
+    }
+
+    if (
+      permissoes.podeEditarCompleto &&
+      dto.descricao !== undefined &&
+      dto.descricao !== demanda.descricao
+    ) {
+      addAlteracao('descricao', 'descricao', demanda.descricao, dto.descricao);
+    }
+
+    if (
+      permissoes.podeEditarCompleto &&
+      dto.prioridade !== undefined &&
+      dto.prioridade !== demanda.prioridade
+    ) {
+      addAlteracao(
+        'prioridade',
+        'prioridade',
+        demanda.prioridade,
+        dto.prioridade,
+      );
+    }
+
+    if (
+      permissoes.podeEditarCompleto &&
+      dto.tags !== undefined &&
+      JSON.stringify(dto.tags) !== JSON.stringify(demanda.tags)
+    ) {
+      addAlteracao('tags', 'tags', demanda.tags, dto.tags);
+    }
+
+    if (permissoes.podeEditarCompleto && dto.prazo !== undefined) {
+      const prazoAnterior = this.toDateOnly(demanda.prazo);
+      const prazoNovo = this.toDateOnly(dto.prazo);
+
+      if (prazoAnterior !== prazoNovo) {
+        addAlteracao('prazo', 'prazo solicitado', prazoAnterior, prazoNovo);
+      }
+    }
+
+    if (
+      permissoes.podeGerirAtendimento &&
+      dto.prazoResolucao !== undefined
+    ) {
+      const prazoAnterior = this.toDateOnly(demanda.prazoResolucao);
+      const prazoNovo = this.toDateOnly(dto.prazoResolucao);
+
+      if (prazoAnterior !== prazoNovo) {
+        addAlteracao(
+          'prazoResolucao',
+          'prazo de resolucao',
+          prazoAnterior,
+          prazoNovo,
+        );
+      }
+    }
+
+    return alteracoes;
+  }
+
+  private toDateOnly(value?: Date | string | null) {
+    if (!value) return null;
+    const date = value instanceof Date ? value : new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date.toISOString().slice(0, 10);
   }
 
   private async notificarSolicitanteStatus(

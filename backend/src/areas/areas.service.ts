@@ -250,7 +250,7 @@ export class AreasService {
       throw new NotFoundException('Responsável ativo não encontrado nesta área');
     }
 
-    const enviado = await this.notificacoesService.enviarEmailTemplate(
+    const envio = await this.notificacoesService.enviarEmailTemplate(
       responsavel.email,
       'mensagem_responsavel',
       {
@@ -263,8 +263,9 @@ export class AreasService {
       },
     );
 
-    if (!enviado) {
+    if (!envio.success) {
       throw new ServiceUnavailableException(
+        envio.error ??
         'Não foi possível enviar o e-mail. Verifique RESEND_API_KEY, RESEND_FROM e se o remetente está verificado no Resend.',
       );
     }
