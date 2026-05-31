@@ -1,30 +1,22 @@
-import { StatusDemanda } from '@prisma/client';
 import { BadRequestException } from '@nestjs/common';
+import { StatusDemanda } from '@prisma/client';
 
-const TRANSICOES_PERMITIDAS: Record<StatusDemanda, StatusDemanda[]> = {
-  [StatusDemanda.ABERTA]: [StatusDemanda.EM_ANALISE, StatusDemanda.CANCELADA],
-  [StatusDemanda.EM_ANALISE]: [
-    StatusDemanda.EM_ANDAMENTO,
-    StatusDemanda.REJEITADA,
-  ],
-  [StatusDemanda.EM_ANDAMENTO]: [
-    StatusDemanda.CONCLUIDA,
-    StatusDemanda.ABERTA,
-  ],
-  [StatusDemanda.CONCLUIDA]: [],
-  [StatusDemanda.CANCELADA]: [],
-  [StatusDemanda.REJEITADA]: [],
-};
+const STATUS_FINAIS: StatusDemanda[] = [
+  StatusDemanda.CONCLUIDA,
+  StatusDemanda.REJEITADA,
+];
 
 export function validarTransicaoStatus(
   statusAtual: StatusDemanda,
   novoStatus: StatusDemanda,
 ): void {
-  const permitidos = TRANSICOES_PERMITIDAS[statusAtual];
+  if (statusAtual === novoStatus) {
+    return;
+  }
 
-  if (!permitidos.includes(novoStatus)) {
+  if (STATUS_FINAIS.includes(statusAtual)) {
     throw new BadRequestException(
-      `Transição inválida de "${statusAtual}" para "${novoStatus}"`,
+      `Demandas com status "${STATUS_LABELS[statusAtual]}" não podem voltar para outro status`,
     );
   }
 }
