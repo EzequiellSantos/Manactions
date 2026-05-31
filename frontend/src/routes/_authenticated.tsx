@@ -58,7 +58,7 @@ function AuthenticatedLayout() {
   }
 
   return (
-    <div className="flex min-h-screen w-full bg-surface">
+    <div className="flex h-screen w-full overflow-hidden bg-surface">
       <AppSidebar />
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
         <SheetContent side="left" className="w-72 border-sidebar-border bg-sidebar p-0">
@@ -66,9 +66,9 @@ function AuthenticatedLayout() {
           <AppSidebar variant="mobile" onNavigate={() => setMobileMenuOpen(false)} />
         </SheetContent>
       </Sheet>
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <Topbar onOpenMobileMenu={() => setMobileMenuOpen(true)} />
-        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
+        <main className="min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">
           <AnimatePresence mode="wait">
             <motion.div
               key={pathname}

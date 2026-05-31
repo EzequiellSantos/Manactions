@@ -87,7 +87,7 @@ export function AppSidebar({ variant = "desktop", onNavigate }: AppSidebarProps)
   }
 
   return (
-    <aside className="hidden w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar md:flex">
+    <aside className="hidden h-screen w-60 shrink-0 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar md:flex">
       {content}
     </aside>
   );
