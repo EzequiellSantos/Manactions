@@ -2,15 +2,19 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { Prisma, StatusDemanda } from '@prisma/client';
 import { generateUniqueSlug, slugify } from '../common/utils/slugify';
+import { NotificacoesService } from '../notificacoes/notificacoes.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAreaDto } from './dto/create-area.dto';
+import { EnviarMensagemResponsavelDto } from './dto/enviar-mensagem-responsavel.dto';
 import { UpdateAreaDto } from './dto/update-area.dto';
 
 const areaListInclude = {
   responsaveis: {
+    where: { ativo: true },
     select: {
       id: true,
       nome: true,
@@ -38,7 +42,10 @@ const areaDetailInclude = {
 
 @Injectable()
 export class AreasService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificacoesService: NotificacoesService,
+  ) {}
 
   async findAll(filtros?: { categoria?: string }) {
     return this.prisma.area.findMany({
@@ -211,6 +218,58 @@ export class AreasService {
         avatarUrl: true,
       },
     });
+  }
+
+  async enviarMensagemResponsavel(
+    areaId: string,
+    usuarioId: string,
+    dto: EnviarMensagemResponsavelDto,
+    remetente: { nome: string; email: string },
+  ) {
+    const area = await this.prisma.area.findFirst({
+      where: { id: areaId, ativo: true },
+      include: {
+        responsaveis: {
+          where: { id: usuarioId, ativo: true },
+          select: {
+            id: true,
+            nome: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!area) {
+      throw new NotFoundException(`Área "${areaId}" não encontrada`);
+    }
+
+    const responsavel = area.responsaveis[0];
+
+    if (!responsavel) {
+      throw new NotFoundException('Responsável ativo não encontrado nesta área');
+    }
+
+    const enviado = await this.notificacoesService.enviarEmailTemplate(
+      responsavel.email,
+      'mensagem_responsavel',
+      {
+        demandaTitulo: dto.assunto,
+        assunto: dto.assunto,
+        mensagem: dto.mensagem,
+        areaNome: area.nome,
+        autor: remetente.nome,
+        remetenteEmail: remetente.email,
+      },
+    );
+
+    if (!enviado) {
+      throw new ServiceUnavailableException(
+        'Não foi possível enviar o e-mail agora',
+      );
+    }
+
+    return { success: true };
   }
 
   private async resolveSlug(

@@ -16,6 +16,7 @@ export class NotificacoesService {
   private readonly resend: Resend | null;
   private readonly supabase: SupabaseClient | null;
   private readonly frontendUrl: string;
+  private readonly emailFrom: string;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -34,6 +35,10 @@ export class NotificacoesService {
     this.frontendUrl = configService.get<string>(
       'FRONTEND_URL',
       'http://localhost:3000',
+    );
+    this.emailFrom = configService.get<string>(
+      'RESEND_FROM',
+      'Manactions <onboarding@resend.dev>',
     );
   }
 
@@ -63,21 +68,23 @@ export class NotificacoesService {
     para: string,
     assunto: string,
     html: string,
-  ): Promise<void> {
+  ): Promise<boolean> {
     if (!this.resend) {
-      this.logger.warn('RESEND_API_KEY não configurada — e-mail não enviado');
-      return;
+      this.logger.warn('RESEND_API_KEY nao configurada - e-mail nao enviado');
+      return false;
     }
 
     try {
       await this.resend.emails.send({
-        from: 'IntraHub <noreply@intrahub.com>',
+        from: this.emailFrom,
         to: para,
         subject: assunto,
         html,
       });
+      return true;
     } catch (error) {
       this.logger.error(`Falha ao enviar e-mail para ${para}`, error);
+      return false;
     }
   }
 
@@ -85,10 +92,10 @@ export class NotificacoesService {
     para: string,
     tipo: EmailTemplateTipo,
     data: Parameters<typeof renderEmailTemplate>[1],
-  ): Promise<void> {
+  ): Promise<boolean> {
     const html = renderEmailTemplate(tipo, data);
     const subject = getEmailSubject(tipo, data.demandaTitulo);
-    await this.enviarEmail(para, subject, html);
+    return this.enviarEmail(para, subject, html);
   }
 
   buildDemandaLink(demandaId: string): string {
@@ -109,7 +116,7 @@ export class NotificacoesService {
     });
 
     if (!notificacao) {
-      throw new NotFoundException('Notificação não encontrada');
+      throw new NotFoundException('Notificacao nao encontrada');
     }
 
     return this.prisma.notificacao.update({
@@ -138,24 +145,21 @@ export class NotificacoesService {
     notificacao: Notificacao,
   ): Promise<void> {
     if (!this.supabase) {
-      this.logger.warn('Supabase não configurado — realtime não enviado');
+      this.logger.warn('Supabase nao configurado - realtime nao enviado');
       return;
     }
 
+    const channel = this.supabase.channel(`notificacoes:${usuarioId}`);
+
     try {
-      const channel = this.supabase.channel(`notificacoes:${usuarioId}`);
-      await channel.subscribe();
-      await channel.send({
-        type: 'broadcast',
-        event: 'nova_notificacao',
-        payload: notificacao,
-      });
-      await this.supabase.removeChannel(channel);
+      await channel.httpSend('nova_notificacao', notificacao);
     } catch (error) {
       this.logger.error(
-        `Falha ao enviar realtime para usuário ${usuarioId}`,
+        `Falha ao enviar realtime para usuario ${usuarioId}`,
         error,
       );
+    } finally {
+      await this.supabase.removeChannel(channel);
     }
   }
 }

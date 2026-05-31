@@ -112,7 +112,7 @@ function AreaDetailPage() {
         <TabsContent value="responsaveis">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {area.responsaveis.map((responsavel) => (
-              <ResponsavelCard key={responsavel.id} responsavel={responsavel} />
+              <ResponsavelCard key={responsavel.id} areaId={area.id} responsavel={responsavel} />
             ))}
           </div>
         </TabsContent>

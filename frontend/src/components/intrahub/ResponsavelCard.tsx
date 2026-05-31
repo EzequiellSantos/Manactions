@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Mail, MessageSquare, Send } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { Loader2, Mail, MessageSquare, Send } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { sendResponsavelMessage } from "@/lib/backend/areas";
 import { cn } from "@/lib/utils";
 import { type Responsavel } from "@/lib/types";
 
@@ -38,23 +41,31 @@ function initials(name: string) {
 }
 
 interface ResponsavelCardProps {
+  areaId: string;
   responsavel: Responsavel;
 }
 
-export function ResponsavelCard({ responsavel }: ResponsavelCardProps) {
+export function ResponsavelCard({ areaId, responsavel }: ResponsavelCardProps) {
   const [open, setOpen] = useState(false);
   const status = STATUS_MAP[responsavel.status];
+  const sendMutation = useMutation({
+    mutationFn: (payload: { assunto: string; mensagem: string }) =>
+      sendResponsavelMessage(areaId, responsavel.id, payload),
+    onSuccess: () => {
+      toast.success("Mensagem enviada", {
+        description: `E-mail enviado para ${responsavel.nome}.`,
+      });
+      setOpen(false);
+    },
+    onError: () => toast.error("Nao foi possivel enviar a mensagem"),
+  });
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const subject = String(form.get("subject") ?? "");
-    const message = String(form.get("message") ?? "");
-    const mailto = new URL(`mailto:${responsavel.email}`);
-    mailto.searchParams.set("subject", subject);
-    mailto.searchParams.set("body", message);
-    window.location.href = mailto.toString();
-    setOpen(false);
+    const assunto = String(form.get("subject") ?? "").trim();
+    const mensagem = String(form.get("message") ?? "").trim();
+    sendMutation.mutate({ assunto, mensagem });
   }
 
   return (
@@ -111,7 +122,7 @@ export function ResponsavelCard({ responsavel }: ResponsavelCardProps) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Mensagem para {responsavel.nome}</DialogTitle>
-            <DialogDescription>Abra um e-mail preenchido para o responsavel da area.</DialogDescription>
+            <DialogDescription>Envie um e-mail pelo IntraHub para o responsavel da area.</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
@@ -123,9 +134,9 @@ export function ResponsavelCard({ responsavel }: ResponsavelCardProps) {
               <Textarea id={`message-${responsavel.id}`} name="message" required rows={5} placeholder="Descreva o que voce precisa" />
             </div>
             <DialogFooter>
-              <Button type="submit" className="gap-2">
-                <Send className="h-4 w-4" />
-                Enviar
+              <Button type="submit" className="gap-2" disabled={sendMutation.isPending}>
+                {sendMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                {sendMutation.isPending ? "Enviando..." : "Enviar"}
               </Button>
             </DialogFooter>
           </form>

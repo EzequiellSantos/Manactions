@@ -39,3 +39,14 @@ export async function updateArea(id: string, payload: Partial<SaveAreaPayload>):
 export async function deleteArea(id: string): Promise<void> {
   await apiFetch(`/areas/${id}`, { method: "DELETE" });
 }
+
+export async function sendResponsavelMessage(
+  areaId: string,
+  usuarioId: string,
+  payload: { assunto: string; mensagem: string },
+): Promise<void> {
+  await apiFetch(`/areas/${areaId}/responsaveis/${usuarioId}/mensagem`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}

@@ -30,6 +30,7 @@ import {
 } from './dto/area-response.dto';
 import { AreaFiltrosDto } from './dto/area-filtros.dto';
 import { CreateAreaDto } from './dto/create-area.dto';
+import { EnviarMensagemResponsavelDto } from './dto/enviar-mensagem-responsavel.dto';
 import { UpdateAreaDto } from './dto/update-area.dto';
 
 @ApiTags('areas')
@@ -121,5 +122,24 @@ export class AreasController {
     @Param('usuarioId') usuarioId: string,
   ) {
     return this.areasService.removeResponsavel(id, usuarioId);
+  }
+
+  @Post(':id/responsaveis/:usuarioId/mensagem')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Enviar mensagem por e-mail ao responsavel' })
+  @ApiParam({ name: 'id', description: 'ID da area' })
+  @ApiParam({ name: 'usuarioId', description: 'ID do responsavel' })
+  @ApiResponse({ status: 201, description: 'Mensagem enviada' })
+  enviarMensagemResponsavel(
+    @Param('id') id: string,
+    @Param('usuarioId') usuarioId: string,
+    @Body() dto: EnviarMensagemResponsavelDto,
+    @CurrentUser() user: Usuario,
+  ) {
+    return this.areasService.enviarMensagemResponsavel(id, usuarioId, dto, {
+      nome: user.nome,
+      email: user.email,
+    });
   }
 }
