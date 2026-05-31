@@ -30,7 +30,6 @@ import {
   deleteUser,
   getUsers,
   updateUserAdmin,
-  updateUserRole,
   type BackendUserListItem,
 } from "@/lib/backend/users";
 import type { Area } from "@/lib/types";
@@ -44,6 +43,8 @@ type Papel = "ADMIN" | "GESTOR" | "COLABORADOR";
 
 interface UserDraft {
   papel: Papel;
+  cargo: string;
+  departamento: string;
   areaId: string;
   recebeDemandas: boolean;
 }
@@ -59,6 +60,7 @@ interface AreaDraft {
 }
 
 const NO_AREA_VALUE = "sem_area";
+const CARGO_OPTIONS = ["Estagiario", "Assistente", "Analista", "Gestor"] as const;
 
 function isPapel(value: string): value is Papel {
   return value === "ADMIN" || value === "GESTOR" || value === "COLABORADOR";
@@ -99,6 +101,8 @@ function AdminConfiguracoesPage() {
   const [editingArea, setEditingArea] = useState<Area | null>(null);
   const [userDraft, setUserDraft] = useState<UserDraft>({
     papel: "COLABORADOR",
+    cargo: "Analista",
+    departamento: "",
     areaId: NO_AREA_VALUE,
     recebeDemandas: false,
   });
@@ -146,16 +150,14 @@ function AdminConfiguracoesPage() {
   });
 
   const updateUserMutation = useMutation({
-    mutationFn: async ({ user, next }: { user: BackendUserListItem; next: UserDraft }) => {
-      if (isPapel(user.papel) && user.papel !== next.papel) {
-        await updateUserRole(user.id, next.papel);
-      }
-
-      return updateUserAdmin(user.id, {
+    mutationFn: async ({ user, next }: { user: BackendUserListItem; next: UserDraft }) =>
+      updateUserAdmin(user.id, {
+        papel: next.papel,
+        cargo: next.cargo.trim() || null,
+        departamento: next.departamento.trim() || null,
         areaId: next.areaId === NO_AREA_VALUE ? null : next.areaId,
         recebeDemandas: next.recebeDemandas,
-      });
-    },
+      }),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["usuarios"] }),
@@ -213,6 +215,8 @@ function AdminConfiguracoesPage() {
     setEditingUser(usuario);
     setUserDraft({
       papel: isPapel(usuario.papel) ? usuario.papel : "COLABORADOR",
+      cargo: usuario.cargo ?? "Analista",
+      departamento: usuario.departamento ?? "",
       areaId: usuario.areaId ?? NO_AREA_VALUE,
       recebeDemandas: usuario.recebeDemandas,
     });
@@ -263,13 +267,15 @@ function AdminConfiguracoesPage() {
             <h2 className="font-display text-lg font-semibold">Usuarios</h2>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[960px] text-sm">
+            <table className="w-full min-w-[1120px] text-sm">
               <thead className="text-xs uppercase text-muted-foreground">
                 <tr>
                   <th className="py-2 text-left">Nome</th>
                   <th className="py-2 text-left">E-mail</th>
                   <th className="py-2 text-left">Status</th>
                   <th className="py-2 text-left">Papel</th>
+                  <th className="py-2 text-left">Cargo</th>
+                  <th className="py-2 text-left">Departamento</th>
                   <th className="py-2 text-left">Area</th>
                   <th className="py-2 text-left">Recebe demandas</th>
                   <th className="py-2 text-right">Acoes</th>
@@ -278,7 +284,7 @@ function AdminConfiguracoesPage() {
               <tbody className="divide-y divide-border">
                 {loadingUsuarios && (
                   <tr>
-                    <td className="py-4 text-sm text-muted-foreground" colSpan={7}>Carregando usuarios...</td>
+                    <td className="py-4 text-sm text-muted-foreground" colSpan={9}>Carregando usuarios...</td>
                   </tr>
                 )}
                 {!loadingUsuarios && usuarios.map((usuario) => (
@@ -287,6 +293,8 @@ function AdminConfiguracoesPage() {
                     <td className="py-3 text-muted-foreground">{usuario.email}</td>
                     <td className="py-3"><UserStatusBadge ativo={usuario.ativo} /></td>
                     <td className="py-3 text-muted-foreground">{usuario.papel}</td>
+                    <td className="py-3 text-muted-foreground">{usuario.cargo ?? "-"}</td>
+                    <td className="py-3 text-muted-foreground">{usuario.departamento ?? "-"}</td>
                     <td className="py-3 text-muted-foreground">{usuario.area?.nome ?? "Sem area"}</td>
                     <td className="py-3 text-muted-foreground">{usuario.recebeDemandas ? "Sim" : "Nao"}</td>
                     <td className="py-3 text-right">
@@ -345,7 +353,16 @@ function AdminConfiguracoesPage() {
           <div className="grid gap-4">
             <div className="grid gap-2">
               <Label>Papel</Label>
-              <Select value={userDraft.papel} onValueChange={(value) => setUserDraft((current) => ({ ...current, papel: value as Papel }))}>
+              <Select
+                value={userDraft.papel}
+                onValueChange={(value) =>
+                  setUserDraft((current) => ({
+                    ...current,
+                    papel: value as Papel,
+                    ...(value === "COLABORADOR" ? { recebeDemandas: false } : {}),
+                  }))
+                }
+              >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ADMIN">ADMIN</SelectItem>
@@ -364,6 +381,28 @@ function AdminConfiguracoesPage() {
                   {areas.map((area) => <SelectItem key={area.id} value={area.id}>{area.nome}</SelectItem>)}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>Cargo</Label>
+              <Select value={userDraft.cargo} onValueChange={(value) => setUserDraft((current) => ({ ...current, cargo: value }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {CARGO_OPTIONS.map((cargo) => (
+                    <SelectItem key={cargo} value={cargo}>{cargo}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="usuario-departamento">Departamento</Label>
+              <Input
+                id="usuario-departamento"
+                value={userDraft.departamento}
+                onChange={(event) => setUserDraft((current) => ({ ...current, departamento: event.target.value }))}
+                placeholder="Ex.: Financeiro, RH, Operacoes"
+              />
             </div>
 
             <label className="flex items-start gap-3 rounded-lg border border-border p-3 text-sm">

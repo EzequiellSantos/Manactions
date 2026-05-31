@@ -82,7 +82,13 @@ export class UsuariosService {
 
   async updateByAdmin(
     id: string,
-    dto: { areaId?: string | null; recebeDemandas?: boolean },
+    dto: {
+      papel?: Papel;
+      cargo?: string | null;
+      departamento?: string | null;
+      areaId?: string | null;
+      recebeDemandas?: boolean;
+    },
     adminId: string,
   ) {
     await this.ensureAdmin(adminId);
@@ -91,8 +97,14 @@ export class UsuariosService {
     return this.prisma.usuario.update({
       where: { id },
       data: {
+        ...(dto.papel !== undefined && { papel: dto.papel }),
+        ...(dto.cargo !== undefined && { cargo: this.normalizeOptionalText(dto.cargo) }),
+        ...(dto.departamento !== undefined && {
+          departamento: this.normalizeOptionalText(dto.departamento),
+        }),
         ...(dto.areaId !== undefined && { areaId: dto.areaId }),
         ...(dto.recebeDemandas !== undefined && { recebeDemandas: dto.recebeDemandas }),
+        ...(dto.papel === Papel.COLABORADOR && { recebeDemandas: false }),
       },
       include: usuarioInclude,
     });
@@ -150,5 +162,11 @@ export class UsuariosService {
     if (!admin || admin.papel !== Papel.ADMIN) {
       throw new ForbiddenException('Apenas administradores podem executar esta ação');
     }
+  }
+
+  private normalizeOptionalText(value: string | null): string | null {
+    if (value === null) return null;
+    const trimmed = value.trim();
+    return trimmed || null;
   }
 }

@@ -19,6 +19,9 @@ export interface BackendUserListItem {
 }
 
 export interface AdminUpdateUserPayload {
+  papel?: "ADMIN" | "GESTOR" | "COLABORADOR";
+  cargo?: string | null;
+  departamento?: string | null;
   areaId?: string | null;
   recebeDemandas?: boolean;
 }

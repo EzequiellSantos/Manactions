@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { sendResponsavelMessage } from "@/lib/backend/areas";
+import { ApiError } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { type Responsavel } from "@/lib/types";
 
@@ -23,6 +24,10 @@ const STATUS_MAP = {
   ferias: { label: "Ferias", cls: "bg-warning/10 text-warning border-warning/20" },
   remoto: { label: "Remoto", cls: "bg-primary/10 text-primary border-primary/20" },
 } satisfies Record<Responsavel["status"], { label: string; cls: string }>;
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof ApiError && error.message ? error.message : fallback;
+}
 
 function hashColor(name: string) {
   let hash = 0;
@@ -57,7 +62,7 @@ export function ResponsavelCard({ areaId, responsavel }: ResponsavelCardProps) {
       });
       setOpen(false);
     },
-    onError: () => toast.error("Nao foi possivel enviar a mensagem"),
+    onError: (error) => toast.error(getErrorMessage(error, "Nao foi possivel enviar a mensagem")),
   });
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {

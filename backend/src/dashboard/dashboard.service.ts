@@ -16,7 +16,7 @@ const demandaListInclude = {
 const areaDestaqueInclude = {
   canaisContato: true,
   responsaveis: {
-    where: { ativo: true },
+    where: { ativo: true, recebeDemandas: true },
     select: { id: true, nome: true, email: true, avatarUrl: true },
     take: 3,
   },
