@@ -1,4 +1,4 @@
-import { CheckCircle2, CircleDot, MessageSquare, UserCheck, XCircle } from "lucide-react";
+import { CheckCircle2, CircleDot, MessageSquare, Pencil, UserCheck, XCircle } from "lucide-react";
 import type { EventoHistorico } from "@/lib/types";
 
 const EVENT_ICON: Record<string, typeof CircleDot> = {
@@ -9,6 +9,7 @@ const EVENT_ICON: Record<string, typeof CircleDot> = {
   resolvida: CheckCircle2,
   cancelada: XCircle,
   rejeitada: XCircle,
+  DEMANDA_EDITADA: Pencil,
 };
 
 function formatDateTime(date: Date) {

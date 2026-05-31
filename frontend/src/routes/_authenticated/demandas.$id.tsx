@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, CalendarClock, Send, Tag, UserRound } from "lucide-react";
@@ -21,6 +22,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { getAreas } from "@/lib/backend/areas";
 import {
@@ -78,6 +87,8 @@ function DemandaDetailPage() {
   const [selectedResponsavelId, setSelectedResponsavelId] = useState("");
   const [statusDraft, setStatusDraft] = useState<DemandaStatus>("aberta");
   const [prazoResolucaoDraft, setPrazoResolucaoDraft] = useState("");
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editDraft, setEditDraft] = useState({ titulo: "", descricao: "" });
 
   const { data: demanda, isLoading, isError } = useQuery({
     queryKey: ["demandas", id],
@@ -126,8 +137,10 @@ function DemandaDetailPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (payload: { titulo?: string; prazo?: string; prazoResolucao?: string }) => updateDemanda(id, payload),
+    mutationFn: (payload: { titulo?: string; descricao?: string; prazo?: string; prazoResolucao?: string }) =>
+      updateDemanda(id, payload),
     onSuccess: async () => {
+      setEditDialogOpen(false);
       await refreshDemandas();
       toast.success("Demanda atualizada");
     },
@@ -139,6 +152,11 @@ function DemandaDetailPage() {
     setStatusDraft(demanda.status);
     setPrazoResolucaoDraft(demanda.prazoResolucao ? demanda.prazoResolucao.toISOString().slice(0, 10) : "");
   }, [demanda?.id, demanda?.prazoResolucao, demanda?.status]);
+
+  useEffect(() => {
+    if (!demanda || editDialogOpen) return;
+    setEditDraft({ titulo: demanda.titulo, descricao: demanda.descricao });
+  }, [demanda, editDialogOpen]);
 
   const commentMutation = useMutation({
     mutationFn: (texto: string) => addDemandaComment(id, texto),
@@ -195,10 +213,32 @@ function DemandaDetailPage() {
     ...(area?.responsaveis ?? []).map((item) => [item.id, item.nome] as const),
   ]);
 
-  function editTitle() {
-    const titulo = window.prompt("Novo titulo da demanda", demandaAtual.titulo);
-    if (!titulo || titulo.trim() === demandaAtual.titulo) return;
-    updateMutation.mutate({ titulo: titulo.trim() });
+  function openEditDialog() {
+    setEditDraft({ titulo: demandaAtual.titulo, descricao: demandaAtual.descricao });
+    setEditDialogOpen(true);
+  }
+
+  function saveDemandDetails(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const titulo = editDraft.titulo.trim();
+    const descricao = editDraft.descricao.trim();
+
+    if (titulo.length < 4) {
+      toast.error("Informe um titulo com pelo menos 4 caracteres.");
+      return;
+    }
+
+    if (descricao.length < 12) {
+      toast.error("Descreva a demanda com mais detalhes.");
+      return;
+    }
+
+    if (titulo === demandaAtual.titulo && descricao === demandaAtual.descricao) {
+      setEditDialogOpen(false);
+      return;
+    }
+
+    updateMutation.mutate({ titulo, descricao });
   }
 
   async function saveDemandControl() {
@@ -272,7 +312,7 @@ function DemandaDetailPage() {
         <div className="flex flex-wrap gap-2">
           {isSolicitante && demanda.status === "aberta" && (
             <>
-              <Button type="button" variant="outline" disabled={updateMutation.isPending} onClick={editTitle}>Editar</Button>
+              <Button type="button" variant="outline" disabled={updateMutation.isPending} onClick={openEditDialog}>Editar</Button>
               <DestructiveAction label="Cancelar" onConfirm={() => statusMutation.mutate({ status: "cancelada", comentario: "Cancelada pelo solicitante" })} />
             </>
           )}
@@ -291,6 +331,49 @@ function DemandaDetailPage() {
           )}
         </div>
       </header>
+
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-xl">
+          <form onSubmit={saveDemandDetails} className="space-y-5">
+            <DialogHeader>
+              <DialogTitle>Editar demanda</DialogTitle>
+              <DialogDescription>
+                Atualize o titulo e a descricao da demanda antes de salvar.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-2">
+              <label htmlFor="demanda-titulo" className="text-sm font-medium text-foreground">Titulo</label>
+              <Input
+                id="demanda-titulo"
+                value={editDraft.titulo}
+                onChange={(event) => setEditDraft((current) => ({ ...current, titulo: event.target.value }))}
+                placeholder="Titulo da demanda"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="demanda-descricao" className="text-sm font-medium text-foreground">Descricao</label>
+              <Textarea
+                id="demanda-descricao"
+                rows={7}
+                value={editDraft.descricao}
+                onChange={(event) => setEditDraft((current) => ({ ...current, descricao: event.target.value }))}
+                placeholder="Detalhe a necessidade, contexto e resultado esperado"
+              />
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? "Salvando..." : "Salvar alteracoes"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
         <main className="space-y-6">
