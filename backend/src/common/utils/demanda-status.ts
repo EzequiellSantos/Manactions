@@ -3,6 +3,7 @@ import { StatusDemanda } from '@prisma/client';
 
 const STATUS_FINAIS: StatusDemanda[] = [
   StatusDemanda.CONCLUIDA,
+  StatusDemanda.CANCELADA,
   StatusDemanda.REJEITADA,
 ];
 
