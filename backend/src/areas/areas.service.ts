@@ -14,7 +14,7 @@ import { UpdateAreaDto } from './dto/update-area.dto';
 
 const areaListInclude = {
   responsaveis: {
-    where: { ativo: true },
+    where: { ativo: true, recebeDemandas: true },
     select: {
       id: true,
       nome: true,
@@ -265,7 +265,7 @@ export class AreasService {
 
     if (!enviado) {
       throw new ServiceUnavailableException(
-        'Não foi possível enviar o e-mail agora',
+        'Não foi possível enviar o e-mail. Verifique RESEND_API_KEY, RESEND_FROM e se o remetente está verificado no Resend.',
       );
     }
 

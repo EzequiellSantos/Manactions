@@ -31,6 +31,7 @@ import {
   updateDemanda,
   updateDemandaStatus,
 } from "@/lib/backend/demandas";
+import { ApiError } from "@/lib/api";
 import { getUsers } from "@/lib/backend/users";
 import { usePermissions } from "@/hooks/use-permissions";
 import {
@@ -63,6 +64,10 @@ function initials(name?: string) {
 }
 
 const DEMANDA_STATUS_OPTIONS: DemandaStatus[] = ["aberta", "em_analise", "em_andamento", "concluida", "cancelada", "rejeitada"];
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof ApiError && error.message ? error.message : fallback;
+}
 
 function DemandaDetailPage() {
   const { id } = Route.useParams();
@@ -117,7 +122,7 @@ function DemandaDetailPage() {
       await refreshDemandas();
       toast.success("Status atualizado");
     },
-    onError: () => toast.error("Nao foi possivel atualizar o status"),
+    onError: (error) => toast.error(getErrorMessage(error, "Nao foi possivel atualizar o status")),
   });
 
   const updateMutation = useMutation({
@@ -206,7 +211,11 @@ function DemandaDetailPage() {
       updates.push(updateMutation.mutateAsync({ prazoResolucao: prazoResolucaoDraft }));
     }
     if (updates.length === 0) return;
-    await Promise.all(updates);
+    try {
+      await Promise.all(updates);
+    } catch {
+      // Mutation handlers already show the backend message to the user.
+    }
   }
 
   function assignSelectedResponsavel() {

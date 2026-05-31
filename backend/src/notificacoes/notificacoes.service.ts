@@ -75,12 +75,19 @@ export class NotificacoesService {
     }
 
     try {
-      await this.resend.emails.send({
+      const result = await this.resend.emails.send({
         from: this.emailFrom,
         to: para,
         subject: assunto,
         html,
       });
+      if (result.error) {
+        this.logger.error(
+          `Resend recusou e-mail para ${para}: ${result.error.message}`,
+          result.error,
+        );
+        return false;
+      }
       return true;
     } catch (error) {
       this.logger.error(`Falha ao enviar e-mail para ${para}`, error);
