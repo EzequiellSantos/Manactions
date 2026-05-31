@@ -12,20 +12,20 @@ export function Logo({ className, compact = false }: LogoProps) {
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
           <defs>
             <linearGradient id="manactions-grad" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#3B5BDB" />
-              <stop offset="100%" stop-color="#4C6EF5" />
+              <stop offset="0%" stopColor="#3B5BDB" />
+              <stop offset="100%" stopColor="#4C6EF5" />
             </linearGradient>
             
             <filter id="drop-shadow" x="-10%" y="-10%" width="130%" height="130%">
-              <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#3B5BDB" flood-opacity="0.24"/>
+              <feDropShadow dx="0" dy="12" stdDeviation="16" floodColor="#3B5BDB" floodOpacity="0.24"/>
             </filter>
           </defs>
 
           <rect x="32" y="32" width="448" height="448" rx="128" fill="url(#manactions-grad)" filter="url(#drop-shadow)" />
 
-          <path d="M140 360V180L210 270L256 210L302 270L372 180V360" stroke="#FFFFFF" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M140 360V180L210 270L256 210L302 270L372 180V360" stroke="#FFFFFF" strokeWidth="44" strokeLinecap="round" strokeLinejoin="round"/>
           
-          <path d="M340 360H380" stroke="#FFFFFF" stroke-width="44" stroke-linecap="round"/>
+          <path d="M340 360H380" stroke="#FFFFFF" strokeWidth="44" strokeLinecap="round"/>
         </svg>
 
       </div>
