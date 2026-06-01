@@ -78,7 +78,12 @@ export function getDemandaCategoryOptions(area?: Pick<Area, "nome" | "slug" | "c
   const areaIdentity = `${slug} ${nome}`;
 
   const areaKey =
-    areaIdentity.includes("recursos-humanos") ||
+    areaIdentity.includes("tecnologia-da-informacao") ||
+    areaIdentity.includes("tecnologia da informacao") ||
+    areaIdentity.includes("informatica") ||
+    hasToken(areaIdentity, "ti")
+      ? "ti"
+      : areaIdentity.includes("recursos-humanos") ||
     areaIdentity.includes("recursos humanos") ||
     areaIdentity.includes("gente") ||
     hasToken(areaIdentity, "rh")
@@ -94,12 +99,7 @@ export function getDemandaCategoryOptions(area?: Pick<Area, "nome" | "slug" | "c
                 areaIdentity.includes("facilities") ||
                 categoria.includes("operacional")
               ? "operacoes"
-              : areaIdentity.includes("tecnologia-da-informacao") ||
-                  areaIdentity.includes("tecnologia da informacao") ||
-                  areaIdentity.includes("informatica") ||
-                  hasToken(areaIdentity, "ti")
-                ? "ti"
-                : undefined;
+              : undefined;
 
   const options = areaKey ? CATEGORY_OPTIONS_BY_AREA_KEY[areaKey] : [];
   return [...options, OUTROS_DEMANDA_CATEGORY];

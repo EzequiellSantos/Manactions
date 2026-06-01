@@ -149,7 +149,12 @@ function AreaDetailPage() {
               A área já está pré-selecionada para agilizar o atendimento.
             </p>
             <div className="mt-6">
-              <DemandaForm areaId={area.id} areaNome={area.nome} />
+              <DemandaForm
+                areaId={area.id}
+                areaNome={area.nome}
+                areaSlug={area.slug}
+                areaCategoria={area.categoria}
+              />
             </div>
           </div>
         </TabsContent>

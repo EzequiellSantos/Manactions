@@ -39,9 +39,11 @@ type DemandaFormValues = z.infer<typeof demandaSchema>;
 interface DemandaFormProps {
   areaId: string;
   areaNome?: string;
+  areaSlug?: string;
+  areaCategoria?: string;
 }
 
-export function DemandaForm({ areaId, areaNome }: DemandaFormProps) {
+export function DemandaForm({ areaId, areaNome, areaSlug, areaCategoria }: DemandaFormProps) {
   const queryClient = useQueryClient();
   const form = useForm<DemandaFormValues>({
     resolver: zodResolver(demandaSchema),
@@ -54,7 +56,11 @@ export function DemandaForm({ areaId, areaNome }: DemandaFormProps) {
     },
   });
   const { loading } = useAuth();
-  const categoriaOptions = getDemandaCategoryOptions({ nome: areaNome ?? "", slug: "", categoria: "" });
+  const categoriaOptions = getDemandaCategoryOptions({
+    nome: areaNome ?? "",
+    slug: areaSlug ?? "",
+    categoria: areaCategoria ?? "",
+  });
   const createMutation = useMutation({
     mutationFn: createDemanda,
     onSuccess: async (demanda) => {
